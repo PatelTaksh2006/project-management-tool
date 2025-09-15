@@ -1,0 +1,62 @@
+{
+  "type": "Compass Connections",
+  "version": {
+    "$numberInt": "1"
+  },
+  "connections": [
+    {
+      "id": "08894144-a083-4529-bede-ce958adfdb2a",
+      "lastUsed": {
+        "$date": {
+          "$numberLong": "1757961153982"
+        }
+      },
+      "favorite": {
+        "name": "project-management-tool"
+      },
+      "savedConnectionType": "favorite",
+      "connectionOptions": {
+        "connectionString": "mongodb://localhost:27017/",
+        "oidc": {
+          "serializedState": "eyJvaWRjUGx1Z2luU3RhdGVWZXJzaW9uIjoxLCJzdGF0ZSI6W119"
+        }
+      }
+    },
+    {
+      "id": "2a2472b8-2420-44c7-b312-7f6fa50d3250",
+      "lastUsed": {
+        "$date": {
+          "$numberLong": "1753983898255"
+        }
+      },
+      "favorite": {
+        "name": "Sessional"
+      },
+      "savedConnectionType": "recent",
+      "connectionOptions": {
+        "connectionString": "mongodb://localhost:27017/",
+        "oidc": {
+          "serializedState": "eyJvaWRjUGx1Z2luU3RhdGVWZXJzaW9uIjoxLCJzdGF0ZSI6W119"
+        }
+      }
+    },
+    {
+      "id": "d2c4fff0-7e13-4a4c-9e06-d92d14b9cc67",
+      "lastUsed": {
+        "$date": {
+          "$numberLong": "1753199248302"
+        }
+      },
+      "favorite": {
+        "name": "db"
+      },
+      "savedConnectionType": "recent",
+      "connectionOptions": {
+        "connectionString": "mongodb://localhost:27017/",
+        "oidc": {
+          "serializedState": "eyJvaWRjUGx1Z2luU3RhdGVWZXJzaW9uIjoxLCJzdGF0ZSI6W119"
+        }
+      }
+    }
+  ]
+}
