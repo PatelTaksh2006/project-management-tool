@@ -6,10 +6,8 @@ import Managerprojects from "../../Data/Projects";
 export default function Dashboard() {
   let id=101;
   let projects=Managerprojects.filter(p=>p.managerId===id);
-  let CompletedTask=projects.reduce((acc,curr,index,self)=>
-                          acc+curr.task.filter(t=>t.status==="Completed").length
-                        ,0);
-  let totalTask=projects.reduce((acc,curr)=>acc+curr.task.length,0);
+  let CompletedTask=projects.reduce((acc, curr) => acc + (Array.isArray(curr.task) ? curr.task.filter(t => t.status === "Completed").length : 0),0);
+let totalTask = projects.reduce((acc, curr) => acc + (Array.isArray(curr.task) ? curr.task.length : 0),0);  
   let totalBudget=projects.reduce((acc,curr)=>acc+curr.budget,0);
   let usedBudget=projects.reduce((acc,curr)=>acc+curr.budgetUsed,0);
   let remainingBudget=totalBudget-usedBudget;
