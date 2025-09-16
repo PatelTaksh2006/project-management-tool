@@ -4,7 +4,6 @@ let projects = [
     Id: 1,
     managerId: 101,
     Name: "management tool",
-    Employees: 20,
     Start_Date: "2025-09-21",
     End_date: "2025-01-29",
     Status: "Active",
@@ -13,10 +12,7 @@ let projects = [
     stakeholders: ["IT", "HR", "CEO"],
     budget: 10000,
     budgetUsed: 4500,
-    milestones: [
-      { id: 1, name: "Design Complete", dueDate: "2025-10-01", completed: true },
-      { id: 2, name: "MVP Release", dueDate: "2025-12-01", completed: false },
-    ],
+    
     team: [
       { id: 1, name: "Alice", role: "Designer" },
       { id: 2, name: "Bob", role: "Developer" },

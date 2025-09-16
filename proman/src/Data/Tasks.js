@@ -2,7 +2,7 @@ let tasks = [
   {
     id: 1,
     name: "Design UI",
-    assignedTo: "Alice",
+    assignedTo: 101,
     status: "In Progress",
     priority: "High",
     dueDate: "2025-09-15",
@@ -12,9 +12,7 @@ let tasks = [
     ],
     // Project details
     projectId: 1,
-    projectName: "management tool",
-    projectManager: "John Doe",
-    projectStatus: "Active",
+    
   },
   {
     id: 2,
