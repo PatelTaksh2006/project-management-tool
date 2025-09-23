@@ -150,9 +150,17 @@ function notify() {
   listeners.forEach((cb) => cb(projects));
 }
 
-function Add(newProject) {
+async function Add(newProject) {
   newProject.Id = projects.length ? Math.max(...projects.map(p => p.Id)) + 1 : 1;
   projects.push(newProject);
+
+  const res=await fetch("http://localhost:3001/api/project/add",{
+    method:"POST",
+    headers: {
+    'Content-Type': 'application/json'  // must be an object with string keys and string values
+  },
+    body:JSON.stringify(newProject)
+  })
   notify();
 }
 

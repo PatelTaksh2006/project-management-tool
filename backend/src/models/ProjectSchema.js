@@ -1,4 +1,4 @@
-const mongoose = require('mongoose')
+import mongoose from 'mongoose'
 const ProjectSchema=new mongoose.Schema(
     {
         id: {
@@ -40,15 +40,16 @@ const ProjectSchema=new mongoose.Schema(
     },
     // Reference to the TeamMember model for the project team
     team: [{
-        type: Schema.Types.ObjectId,
+        type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     }],
     // Reference to the Task model for all project tasks
     tasks: [{
-        type: Schema.Types.ObjectId,
+        type: mongoose.Schema.Types.ObjectId,
         ref: 'Task'
     }]
 }
 );
 
 const Project=mongoose.model("Project",ProjectSchema);
+export default Project;
