@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Modal, Button, Form } from "react-bootstrap";
+import { Modal, Button, Form, ListGroup } from "react-bootstrap";
 
 export default function EditTask({ task, show, onClose, onTaskUpdate, employeeList }) {
-  // Initialize form data with the task prop
   const [formData, setFormData] = useState({
     _id: "",
     name: "",
@@ -12,27 +11,22 @@ export default function EditTask({ task, show, onClose, onTaskUpdate, employeeLi
     files: [],
   });
 
-  // Update form data when task prop changes
+  const [originalDueFormat, setOriginalDueFormat] = useState(null);
+
   useEffect(() => {
     if (task) {
-      // helpers to normalize and detect formats
       const toInputDate = (val) => {
         if (!val) return "";
-        // If already ISO-like (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)
-        if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}/.test(val)) {
-          return val.split('T')[0];
-        }
-        // If dd-mm-yyyy
-        if (typeof val === 'string' && /^\d{2}-\d{2}-\d{4}$/.test(val)) {
-          const [dd, mm, yyyy] = val.split('-');
+        if (typeof val === "string" && /^\d{4}-\d{2}-\d{2}/.test(val)) return val.split("T")[0];
+        if (typeof val === "string" && /^\d{2}-\d{2}-\d{4}$/.test(val)) {
+          const [dd, mm, yyyy] = val.split("-");
           return `${yyyy}-${mm}-${dd}`;
         }
-        // Try Date parse
         const d = new Date(val);
         if (!isNaN(d)) {
           const yyyy = d.getFullYear();
-          const mm = String(d.getMonth() + 1).padStart(2, '0');
-          const dd = String(d.getDate()).padStart(2, '0');
+          const mm = String(d.getMonth() + 1).padStart(2, "0");
+          const dd = String(d.getDate()).padStart(2, "0");
           return `${yyyy}-${mm}-${dd}`;
         }
         return "";
@@ -40,32 +34,27 @@ export default function EditTask({ task, show, onClose, onTaskUpdate, employeeLi
 
       const detectFormat = (val) => {
         if (!val) return null;
-        if (typeof val === 'string' && /^\d{2}-\d{2}-\d{4}$/.test(val)) return 'dd-mm-yyyy';
-        if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}/.test(val)) return 'iso';
-        return 'other';
+        if (/^\d{2}-\d{2}-\d{4}$/.test(val)) return "dd-mm-yyyy";
+        if (/^\d{4}-\d{2}-\d{2}/.test(val)) return "iso";
+        return "other";
       };
 
-      const detected = detectFormat(task.dueDate);
-      setOriginalDueFormat(detected);
+      setOriginalDueFormat(detectFormat(task.dueDate));
 
       setFormData({
         _id: task._id || "",
         name: task.name || "",
-        // Normalize assignedTo to an id string when possible so the select can match
-        assignedTo: (typeof task.assignedTo === 'object' && task.assignedTo !== null)
-          ? (task.assignedTo._id || task.assignedTo.id || task.assignedTo.Name || task.assignedTo.name || "")
-          : (task.assignedTo || ""),
+        assignedTo:
+          typeof task.assignedTo === "object" && task.assignedTo !== null
+            ? task.assignedTo._id || task.assignedTo.id || ""
+            : task.assignedTo || "",
         status: task.status || "To Do",
         dueDate: toInputDate(task.dueDate),
-        files: task.files || [],
+        files: Array.isArray(task.files) ? [...task.files] : [],
       });
     }
   }, [task, show]);
 
-  // remember original due date format so we can preserve it on submit
-  const [originalDueFormat, setOriginalDueFormat] = useState(null);
-
-  // Handle modal close
   const handleClose = () => {
     setFormData({
       _id: "",
@@ -78,38 +67,29 @@ export default function EditTask({ task, show, onClose, onTaskUpdate, employeeLi
     if (onClose) onClose();
   };
 
-  // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    if(name==="dueDate" && value < new Date().toISOString().split('T')[0]){
+    if (name === "dueDate" && value < new Date().toISOString().split("T")[0]) {
       alert("Due Date cannot be in the past");
       return;
     }
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // 🧹 Remove file from local list
+  const handleRemoveFile = (idx) => {
+    setFormData((prev) => ({
+      ...prev,
+      files: prev.files.filter((_, i) => i !== idx),
     }));
   };
 
-  // Handle file uploads
-  // const handleFileChange = (e) => {
-  //   const files = Array.from(e.target.files).map(file => ({
-  //     name: file.name,
-  //     url: URL.createObjectURL(file)
-  //   }));
-  //   setFormData(prevData => ({
-  //     ...prevData,
-  //     files
-  //   }));
-  // };
-
-  // Handle form submission
+  // 🧾 Submit changes
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Convert dueDate back to original format when possible
     let outDueDate = formData.dueDate;
-    if (formData.dueDate && originalDueFormat === 'dd-mm-yyyy') {
-      const [yyyy, mm, dd] = formData.dueDate.split('-');
+    if (formData.dueDate && originalDueFormat === "dd-mm-yyyy") {
+      const [yyyy, mm, dd] = formData.dueDate.split("-");
       outDueDate = `${dd}-${mm}-${yyyy}`;
     }
 
@@ -119,11 +99,10 @@ export default function EditTask({ task, show, onClose, onTaskUpdate, employeeLi
       assignedTo: formData.assignedTo,
       status: formData.status,
       dueDate: outDueDate,
-      files: formData.files
+      files: formData.files, // includes removed items
     };
-    if (onTaskUpdate) {
-      onTaskUpdate(updatedTask);
-    }
+
+    if (onTaskUpdate) onTaskUpdate(updatedTask);
     handleClose();
   };
 
@@ -134,18 +113,6 @@ export default function EditTask({ task, show, onClose, onTaskUpdate, employeeLi
       </Modal.Header>
       <Form onSubmit={handleSubmit}>
         <Modal.Body>
-          {/* <Form.Group className="mb-3">
-            <Form.Label>Task ID</Form.Label>
-            <Form.Control
-              type="text"
-              name="_id"
-              value={formData._id}
-              onChange={handleInputChange}
-              placeholder="Enter task ID"
-              required
-              disabled // Usually ID is not editable
-            />
-          </Form.Group> */}
           <Form.Group className="mb-3">
             <Form.Label>Assigned To</Form.Label>
             <Form.Select
@@ -153,26 +120,23 @@ export default function EditTask({ task, show, onClose, onTaskUpdate, employeeLi
               value={formData.assignedTo}
               onChange={handleInputChange}
               required
-              disabled={formData.status!=="To Do"}
+              disabled={formData.status !== "To Do"}
             >
               <option value="">Select assignee</option>
-              {employeeList && employeeList.map((emp, idx) => {
-                if (!emp) return null;
-                if (typeof emp === 'string' || typeof emp === 'number') {
-                  const val = String(emp);
+              {employeeList &&
+                employeeList.map((emp, idx) => {
+                  if (!emp) return null;
+                  const id = String(emp._id || emp.id || idx);
+                  const label = emp.Name || emp.name || id;
                   return (
-                    <option key={val + idx} value={val}>{val}</option>
+                    <option key={id} value={id}>
+                      {label}
+                    </option>
                   );
-                }
-                // Normalize employee id and label so it matches the formData.assignedTo value
-                const id = String(emp._id || emp.id || emp.Name || emp.name || idx);
-                const label = emp.Name || emp.name || id;
-                return (
-                  <option key={id} value={id}>{label}</option>
-                );
-              })}
+                })}
             </Form.Select>
           </Form.Group>
+
           <Form.Group className="mb-3">
             <Form.Label>Task Name</Form.Label>
             <Form.Control
@@ -182,9 +146,10 @@ export default function EditTask({ task, show, onClose, onTaskUpdate, employeeLi
               onChange={handleInputChange}
               placeholder="Enter task name"
               required
-              disabled={formData.status!=="To Do"}
+              disabled={formData.status !== "To Do"}
             />
           </Form.Group>
+
           <Form.Group className="mb-3">
             <Form.Label>Status</Form.Label>
             <Form.Select
@@ -198,7 +163,41 @@ export default function EditTask({ task, show, onClose, onTaskUpdate, employeeLi
               <option value="Completed">Completed</option>
             </Form.Select>
           </Form.Group>
-          
+
+          {/* 📂 File Management Section */}
+          <Form.Group className="mb-3">
+            <Form.Label>Attached Files</Form.Label>
+            {formData.files && formData.files.length > 0 ? (
+              <ListGroup>
+                {formData.files.map((file, idx) => (
+                  <ListGroup.Item
+                    key={idx}
+                    className="d-flex justify-content-between align-items-center"
+                  >
+                    <a
+                      href={file.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ textDecoration: "none" }}
+                    >
+                      {file.name}
+                    </a>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => handleRemoveFile(idx)}
+                      disabled={formData.status === "Completed"}
+                    >
+                      Remove
+                    </Button>
+                  </ListGroup.Item>
+                ))}
+              </ListGroup>
+            ) : (
+              <div className="text-muted">No files attached.</div>
+            )}
+          </Form.Group>
+
           <Form.Group className="mb-3">
             <Form.Label>Due Date</Form.Label>
             <Form.Control
@@ -207,11 +206,11 @@ export default function EditTask({ task, show, onClose, onTaskUpdate, employeeLi
               value={formData.dueDate}
               onChange={handleInputChange}
               required
-              disabled={formData.status!=="To Do"}
+              disabled={formData.status !== "To Do"}
             />
           </Form.Group>
-          
         </Modal.Body>
+
         <Modal.Footer>
           <Button variant="secondary" onClick={handleClose}>
             Cancel
