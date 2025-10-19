@@ -1,29 +1,24 @@
 import mongoose from 'mongoose'
 const ProjectSchema=new mongoose.Schema(
     {
-        id: {
-        type: Number,
-        unique: true,
-        required: true
-    },
     managerId: {
         type: mongoose.Schema.Types.ObjectId,
         ref:"User"
         // You could also reference a manager from a User model here.
     },
-    name: {
+    Name: {
         type: String,
         required: true
     },
-    startDate: {
+    StartDate: {
         type: Date
     },
-    endDate: {
+    EndDate: {
         type: Date
     },
-    status: {
+    Status: {
         type: String,
-        enum: ['Active', 'Completed', 'On Hold', 'Canceled']
+        enum: ['Active', 'Completed', 'Pending']
     },
     client: {
         type: String

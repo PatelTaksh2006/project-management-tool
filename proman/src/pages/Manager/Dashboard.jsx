@@ -3,9 +3,12 @@ import Navbar from "../../components/Navbar";
 import Sidebar from "../../components/Sidebar";
 import { Row, Col, Card, Badge, Container, ProgressBar } from "react-bootstrap";
 import Managerprojects from "../../Data/Projects";
+import { useUser } from "../../contexts/UserContext";
+
 export default function Dashboard() {
-  let id=101;
-  let projects=Managerprojects.filter(p=>p.managerId===id);
+  const { user } = useUser();
+  let id = user?._id; // Use user ID from context, fallback to 101
+  let projects = Managerprojects.filter(p => p.managerId === id);
   let CompletedTask=projects.reduce((acc, curr) => acc + (Array.isArray(curr.task) ? curr.task.filter(t => t.status === "Completed").length : 0),0);
 let totalTask = projects.reduce((acc, curr) => acc + (Array.isArray(curr.task) ? curr.task.length : 0),0);  
   let totalBudget=projects.reduce((acc,curr)=>acc+curr.budget,0);
@@ -50,7 +53,7 @@ let totalTask = projects.reduce((acc, curr) => acc + (Array.isArray(curr.task) ?
                     <ul className="mb-0 ps-3">
 
                       {projects.map(element => 
-                        <li key={element.Id} className="mb-1 text-capitalize">{element.Name}</li>                        
+                        <li key={element._id} className="mb-1 text-capitalize">{element.Name}</li>                        
                       )}
                     </ul>
                   </Card.Body>

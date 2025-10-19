@@ -1,9 +1,9 @@
 import mongoose from 'mongoose';
 // import Project from ProjectSchema;
 const UserSchema=new mongoose.Schema({
-    Id:{type:Number , required:true},
     Name:{type:String,required:true},
     Email:{type:String,required:true},
+    Password:{type:String,required:true},
     isManager:{type:Boolean,required:true},
     role:{type:String,required:true},
     department:{type:String,required:true},
@@ -14,6 +14,13 @@ const UserSchema=new mongoose.Schema({
         {
             type:mongoose.Schema.Types.ObjectId,
             ref:"Project"
+        }
+    ]
+    ,
+    tasks:[
+        {
+            type:mongoose.Schema.Types.ObjectId,
+            ref:"Task"
         }
     ]
 }

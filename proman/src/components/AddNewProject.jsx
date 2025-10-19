@@ -10,7 +10,6 @@ export default function AddNewProject({ show, onClose, onProjectAdd, EmployeeLis
     Status: "Active",
     client: "",
     description: "",
-    stakeholders: "",
     budget: "",
     team: [],
     managerId: "",
@@ -25,7 +24,6 @@ export default function AddNewProject({ show, onClose, onProjectAdd, EmployeeLis
       Status: "Active",
       client: "",
       description: "",
-      stakeholders: "",
       budget: "",
       team: [],
       managerId: "",
@@ -36,6 +34,10 @@ export default function AddNewProject({ show, onClose, onProjectAdd, EmployeeLis
   // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    if(name==="End_date" && value < formData.Start_Date){
+      alert("End Date cannot be before Start Date");
+      return;
+    }
     setFormData((prevData) => ({
       ...prevData,
       [name]: value,
@@ -46,9 +48,9 @@ export default function AddNewProject({ show, onClose, onProjectAdd, EmployeeLis
   const handleTeamChange = (e) => {
     const selectedOptions = Array.from(e.target.selectedOptions);
     const selectedTeam = selectedOptions.map((option) => {
-      const emp = EmployeeList.find((emp) => emp.id === Number(option.value));
+      const emp = EmployeeList.find((emp) => emp._id === option.value);
       return emp
-        ? { id: emp.id, name: emp.name, role: emp.role }
+        ? { id: emp._id, name: emp.Name, role: emp.role }
         : null;
     }).filter(Boolean);
     setFormData((prevData) => ({
@@ -61,25 +63,21 @@ export default function AddNewProject({ show, onClose, onProjectAdd, EmployeeLis
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Convert comma-separated stakeholders to array
-    const stakeholdersArr = formData.stakeholders
-      ? formData.stakeholders.split(",").map((s) => s.trim()).filter(Boolean)
-      : [];
-
+   
+    const teamMembers = formData.team.map((emp) => emp.id);
     const newProject = {
       // Id is ignored, managerId is included
-      managerId: Number(formData.managerId),
+      managerId: formData.managerId,
       Name: formData.Name,
       Employees: formData.team.length,
-      Start_Date: formData.Start_Date,
-      End_date: formData.End_date,
+      StartDate: formData.Start_Date,
+      EndDate: formData.End_date,
       Status: formData.Status,
       client: formData.client,
       description: formData.description,
-      stakeholders: stakeholdersArr,
       budget: Number(formData.budget) || 0,
       budgetUsed: 0,
-      team: formData.team,
+      team: teamMembers,
       // milestones and task are intentionally omitted
     };
 
@@ -130,16 +128,6 @@ export default function AddNewProject({ show, onClose, onProjectAdd, EmployeeLis
             />
           </Form.Group>
           <Form.Group className="mb-3">
-            <Form.Label>Stakeholders (comma separated)</Form.Label>
-            <Form.Control
-              type="text"
-              name="stakeholders"
-              value={formData.stakeholders}
-              onChange={handleInputChange}
-              placeholder="e.g. IT, HR, CEO"
-            />
-          </Form.Group>
-          <Form.Group className="mb-3">
             <Form.Label>Budget</Form.Label>
             <Form.Control
               type="number"
@@ -149,24 +137,7 @@ export default function AddNewProject({ show, onClose, onProjectAdd, EmployeeLis
               placeholder="Enter budget"
             />
           </Form.Group>
-          <Form.Group className="mb-3">
-            <Form.Label>Team Members</Form.Label>
-            <Form.Select
-              multiple
-              value={formData.team.map((emp) => emp.id.toString())}
-              onChange={handleTeamChange}
-            >
-              {EmployeeList &&
-                EmployeeList.map((emp) => (
-                  <option key={emp.id} value={emp.id}>
-                    {emp.name} ({emp.role})
-                  </option>
-                ))}
-            </Form.Select>
-            <Form.Text className="text-muted">
-              Hold Ctrl (Windows) or Cmd (Mac) to select multiple employees.
-            </Form.Text>
-          </Form.Group>
+
           <Form.Group className="mb-3">
             <Form.Label>Start Date</Form.Label>
             <Form.Control
@@ -176,7 +147,7 @@ export default function AddNewProject({ show, onClose, onProjectAdd, EmployeeLis
               onChange={handleInputChange}
               required
             />
-          </Form.Group>
+          </Form.Group> 
           <Form.Group className="mb-3">
             <Form.Label>End Date</Form.Label>
             <Form.Control
@@ -197,9 +168,26 @@ export default function AddNewProject({ show, onClose, onProjectAdd, EmployeeLis
             >
               <option value="Active">Active</option>
               <option value="Pending">Pending</option>
-              <option value="Completed">Completed</option>
             </Form.Select>
           </Form.Group>
+          { (formData.Status=="Active" && <Form.Group className="mb-3">
+            <Form.Label>Team Members</Form.Label>
+            <Form.Select
+              multiple
+              value={formData.team.map((emp) => emp.id)}
+              onChange={handleTeamChange}
+            >
+              {EmployeeList &&
+                EmployeeList.map((emp) => (
+                  <option key={emp._id} value={emp._id}>
+                    {emp.Name}-{emp.role}
+                  </option>
+                ))}
+            </Form.Select>
+            <Form.Text className="text-muted">
+              Hold Ctrl (Windows) or Cmd (Mac) to select multiple employees.
+            </Form.Text>
+          </Form.Group>)}
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={handleClose}>

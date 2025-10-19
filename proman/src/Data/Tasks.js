@@ -1,149 +1,12 @@
-let tasks = [
-  {
-    id: 1,
-    name: "Design UI",
-    assignedTo: 101,
-    status: "In Progress",
-    priority: "High",
-    dueDate: "2025-09-15",
-    files: [
-      { name: "UI_Mockup.png", url: "#" },
-      { name: "DesignSpecs.pdf", url: "#" },
-    ],
-    // Project details
-    projectId: 1,
-    
-  },
-  {
-    id: 2,
-    name: "Setup Database",
-    assignedTo: "Bob",
-    status: "Completed",
-    priority: "Medium",
-    dueDate: "2025-09-10",
-    files: [
-      { name: "DBSchema.sql", url: "#" },
-    ],
-    projectId: 1,
-    projectName: "management tool",
-    projectManager: "John Doe",
-    projectStatus: "Active",
-  },
-  {
-    id: 3,
-    name: "Write Documentation",
-    assignedTo: "Charlie",
-    status: "To Do",
-    priority: "Low",
-    dueDate: "2025-09-20",
-    files: [],
-    projectId: 1,
-    projectName: "management tool",
-    projectManager: "John Doe",
-    projectStatus: "Active",
-  },
-  {
-    id: 4,
-    name: "Analytics Dashboard",
-    assignedTo: "David",
-    status: "To Do",
-    priority: "High",
-    dueDate: "2025-10-05",
-    files: [],
-    projectId: 2,
-    projectName: "analytics platform",
-    projectManager: "Jane Smith",
-    projectStatus: "Pending",
-  },
-  {
-    id: 5,
-    name: "API Integration",
-    assignedTo: "Eva",
-    status: "In Progress",
-    priority: "Medium",
-    dueDate: "2025-10-15",
-    files: [],
-    projectId: 2,
-    projectName: "analytics platform",
-    projectManager: "Jane Smith",
-    projectStatus: "Pending",
-  },
-  {
-    id: 6,
-    name: "CRM Data Import",
-    assignedTo: "Frank",
-    status: "To Do",
-    priority: "High",
-    dueDate: "2025-09-25",
-    files: [],
-    projectId: 3,
-    projectName: "crm revamp",
-    projectManager: "Emily Clark",
-    projectStatus: "Active",
-  },
-  {
-    id: 7,
-    name: "UI Testing",
-    assignedTo: "frank",
-    status: "Completed",
-    priority: "Low",
-    dueDate: "2025-08-20",
-    files: [],
-    projectId: 4,
-    projectName: "website redesign",
-    projectManager: "Mark Lee",
-    projectStatus: "Completed",
-  },
-  {
-    id: 8,
-    name: "Mobile App Prototype",
-    assignedTo: "Henry",
-    status: "In Progress",
-    priority: "High",
-    dueDate: "2025-10-30",
-    files: [],
-    projectId: 5,
-    projectName: "mobile app",
-    projectManager: "Sara Kim",
-    projectStatus: "Active",
-  },
-  {
-    id: 9,
-    name: "Billing Logic",
-    assignedTo: "Ivy",
-    status: "Completed",
-    priority: "Medium",
-    dueDate: "2025-03-10",
-    files: [],
-    projectId: 6,
-    projectName: "billing automation",
-    projectManager: "Tom Brown",
-    projectStatus: "Completed",
-  },
-  {
-    id: 10,
-    name: "Data Migration Script",
-    assignedTo: "Jack",
-    status: "Completed",
-    priority: "High",
-    dueDate: "2025-06-15",
-    files: [],
-    projectId: 7,
-    projectName: "data migration",
-    projectManager: "Linda Green",
-    projectStatus: "Completed",
-  },
-];
+let tasks = [];
 const listeners = [];
 
 function notify() {
-  listeners.forEach(cb => cb([...tasks]));
+  listeners.forEach((cb) => cb(tasks));
 }
 
-function getTasks() {
-  return [...tasks];
-}
 
+// Subscribe to changes (for React components)
 function subscribe(cb) {
   listeners.push(cb);
   return () => {
@@ -152,20 +15,90 @@ function subscribe(cb) {
   };
 }
 
-function Add(newTask) {
-  newTask.id = tasks.length ? Math.max(...tasks.map(t => t.id)) + 1 : 1;
-  tasks = [...tasks, newTask];
-  notify();
+// Get the latest tasks for a project (from backend)
+async function getTasks(projectId) {
+  try {
+    const res = await fetch(`http://localhost:3001/api/task/getAll?projectId=${projectId}`);
+    if (res.ok) {
+      const data = await res.json();
+      // normalize response to an array of tasks
+        const raw = Array.isArray(data.tasks) ? data.tasks : Array.isArray(data) ? data : [];
+        // Use server-populated task objects directly (assumed to include assigned user)
+        tasks = raw;
+      notify();
+    } else {
+      console.error("Failed to fetch tasks:", res.status, res.statusText);
+      tasks = [];
+    }
+  } catch (err) {
+    console.error("Error fetching tasks:", err);
+    tasks = [];
+  }
+  return tasks;
 }
 
-function update(updatedTask) {
-  tasks = tasks.map(t => (t.id === updatedTask.id ? updatedTask : t));
-  notify();
+// Get tasks assigned to a specific employee
+async function getEmployeeTasks(employeeId) {
+  try {
+    console.log('Fetching tasks for employee:', employeeId);
+    const res = await fetch(`http://localhost:3001/api/task/getByEmployee/${employeeId}`);
+    if (res.ok) {
+      const data = await res.json();
+      const raw = Array.isArray(data.tasks) ? data.tasks : Array.isArray(data) ? data : [];
+      tasks = raw;  
+      notify();
+      console.log('Fetched tasks for employee:', tasks);
+      return tasks;
+    } else {
+      console.error('Failed to fetch employee tasks:', res.status, res.statusText);
+      tasks = [];
+    }
+  } catch (err) {
+    console.error('Error fetching employee tasks:', err);
+    tasks = [];
+  }
+  return tasks;
 }
 
-function del(taskId) {
-  tasks = tasks.filter(t => t.id !== taskId);
-  notify();
+async function Add(newTask) {
+  try {
+    const res = await fetch("http://localhost:3001/api/task/add", {
+      method: "POST",
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newTask),
+    });
+    // refresh tasks for the project
+    await getTasks(newTask.projectId);
+  } catch (err) {
+    console.error("Failed to add task:", err);
+  }
 }
 
-export { getTasks, subscribe, Add, update, del };
+async function update(updatedTask) {
+  try {
+    await fetch("http://localhost:3001/api/task/update", {
+      method: "PUT",
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedTask),
+    });
+    await getTasks(updatedTask.projectId);
+  } catch (err) {
+    console.error("Failed to update task:", err);
+  }
+}
+
+async function del(taskId, projectId) {
+  try {
+    await fetch("http://localhost:3001/api/task/delete", {
+      method: "DELETE",
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: taskId }),
+    });
+    await getTasks(projectId);
+  } catch (err) {
+    console.error("Failed to delete task:", err);
+  }
+}
+
+export default tasks;
+export { getTasks, getEmployeeTasks, subscribe, Add, update, del };

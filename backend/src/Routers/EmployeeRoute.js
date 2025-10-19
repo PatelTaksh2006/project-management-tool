@@ -9,4 +9,11 @@ router.post('/add',async (req,res)=>{
     res.send('Employee added');
 });
 
+
+
+router.get('/getAll',async (req,res)=>{
+    const emps=await user.find({isManager:false});
+    res.send({emps});
+});
+
 export default router;

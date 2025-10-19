@@ -1,147 +1,4 @@
 let projects = [
-  // Manager 101: One Active, One Completed
-  {
-    Id: 1,
-    managerId: 101,
-    Name: "management tool",
-    Start_Date: "2025-09-21",
-    End_date: "2025-01-29",
-    Status: "Active",
-    client: "Acme Corp",
-    description: "A tool to manage projects, tasks, and teams efficiently.",
-    stakeholders: ["IT", "HR", "CEO"],
-    budget: 10000,
-    budgetUsed: 4500,
-    
-    team: [
-      { id: 1, name: "Alice", role: "Designer" },
-      { id: 2, name: "Bob", role: "Developer" },
-      { id: 3, name: "Charlie", role: "QA" },
-    ],
-    task: [
-      {
-        id: 1,
-        name: "Design UI",
-        assignedTo: "Alice",
-        status: "In Progress",
-        priority: "High",
-        dueDate: "2025-09-15",
-        files: [
-          { name: "UI_Mockup.png", url: "#" },
-          { name: "DesignSpecs.pdf", url: "#" },
-        ],
-      },
-      {
-        id: 2,
-        name: "Setup Database",
-        assignedTo: "Bob",
-        status: "Completed",
-        priority: "Medium",
-        dueDate: "2025-09-10",
-        files: [
-          { name: "DBSchema.sql", url: "#" },
-        ],
-      },
-      {
-        id: 3,
-        name: "Write Documentation",
-        assignedTo: "Charlie",
-        status: "To Do",
-        priority: "Low",
-        dueDate: "2025-09-20",
-        files: [],
-      },
-    ],
-  },
-  {
-    Id: 2,
-    managerId: 101,
-    Name: "website redesign",
-    Employees: 5,
-    Start_Date: "2025-08-01",
-    End_date: "2025-09-15",
-    Status: "Completed",
-    client: "WebWorks",
-    description: "Redesigning the company website for a modern look.",
-    stakeholders: ["Marketing"],
-    budget: 7000,
-    budgetUsed: 7000,
-    milestones: [],
-    team: [],
-    task: [],
-  },
-
-  // Manager 102: One Active, One Pending
-  {
-    Id: 3,
-    managerId: 102,
-    Name: "analytics platform",
-    Employees: 8,
-    Start_Date: "2025-07-10",
-    End_date: "2025-12-01",
-    Status: "Pending",
-    client: "DataCorp",
-    description: "A platform for advanced analytics and reporting.",
-    stakeholders: ["Analytics", "CTO"],
-    budget: 20000,
-    budgetUsed: 5000,
-    milestones: [],
-    team: [],
-    task: [],
-  },
-  {
-    Id: 4,
-    managerId: 102,
-    Name: "ai assistant",
-    Employees: 18,
-    Start_Date: "2025-06-18",
-    End_date: "2025-12-31",
-    Status: "Active",
-    client: "AI Solutions",
-    description: "Developing an AI-powered assistant.",
-    stakeholders: ["AI", "Support"],
-    budget: 30000,
-    budgetUsed: 15000,
-    milestones: [],
-    team: [],
-    task: [],
-  },
-
-  // Manager 103: One Active, One Completed
-  {
-    Id: 5,
-    managerId: 103,
-    Name: "crm revamp",
-    Employees: 14,
-    Start_Date: "2025-05-15",
-    End_date: "2025-10-30",
-    Status: "Active",
-    client: "CRM Inc.",
-    description: "Revamping the CRM for better customer engagement.",
-    stakeholders: ["Sales", "Support"],
-    budget: 15000,
-    budgetUsed: 9000,
-    milestones: [],
-    team: [],
-    task: [],
-  },
-  {
-    Id: 6,
-    managerId: 103,
-    Name: "internal wiki",
-    Employees: 3,
-    Start_Date: "2025-02-10",
-    End_date: "2025-04-22",
-    Status: "Completed",
-    client: "Internal",
-    description: "Building an internal knowledge base.",
-    stakeholders: ["All Departments"],
-    budget: 2000,
-    budgetUsed: 2000,
-    milestones: [],
-    team: [],
-    task: [],
-  },
 ];
 
 const listeners = [];
@@ -151,26 +8,53 @@ function notify() {
 }
 
 async function Add(newProject) {
-  newProject.Id = projects.length ? Math.max(...projects.map(p => p.Id)) + 1 : 1;
-  projects.push(newProject);
+  // Immediately update local store so UI reflects the new project without waiting for network
+  // projects.push(newProject);
+  
 
-  const res=await fetch("http://localhost:3001/api/project/add",{
-    method:"POST",
-    headers: {
-    'Content-Type': 'application/json'  // must be an object with string keys and string values
-  },
-    body:JSON.stringify(newProject)
-  })
+  // Persist to backend and then refresh local store from backend to obtain any server-assigned fields (e.g. _id)
+
+    const res = await fetch("http://localhost:3001/api/project/add", {
+      method: "POST",
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(newProject)
+    });
+  
+getProjects(newProject.managerId);
   notify();
 }
 
 function update(updatedProject) {
-  projects = projects.map(p => (p.Id === updatedProject.Id ? updatedProject : p));
+  projects = projects.map(p => (p._id === updatedProject._id ? updatedProject : p));
+  const res=fetch("http://localhost:3001/api/project/update", {
+    method: "PUT",
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(updatedProject)
+  });
+  getProjects(updatedProject.managerId);
   notify();
 }
 
-function del(projectId) {
-  projects = projects.filter((p) => p.Id !== projectId);
+async function del(projectId, managerId) {
+  // Optimistically remove locally so UI updates immediately
+  projects = projects.filter((p) => p._id !== projectId);
+  try {
+    await fetch("http://localhost:3001/api/project/delete", {
+      method: "DELETE",
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ _id: projectId })
+    });
+  } catch (err) {
+    console.error('Failed to delete project on server:', err);
+  }
+  // Re-fetch projects for the same manager (if provided) to keep local store consistent
+  getProjects(managerId);
   notify();
 }
 
@@ -184,7 +68,22 @@ function subscribe(cb) {
 }
 
 // Get the latest projects (for React state initialization)
-function getProjects() {
+async function getProjects(managerId) {
+    try {
+    const res = await fetch(`http://localhost:3001/api/project/getAll?managerId=${managerId}`);
+    if (res.ok) {
+      const data = await res.json();
+      // Handle different response structures
+      projects = data.projects || data || [];
+      notify();
+    } else {
+      console.error('Failed to fetch projects:', res.status, res.statusText);
+      projects = [];
+    }
+  } catch (error) {
+    console.error('Error fetching projects:', error);
+    projects = [];
+  }
   return projects;
 }
 

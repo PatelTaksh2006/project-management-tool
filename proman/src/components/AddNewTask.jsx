@@ -1,14 +1,12 @@
 import React, { useState } from "react";
 import { Modal, Button, Form } from "react-bootstrap";
 
-export default function AddNewTask({ show, onClose, onTaskAdd,employeeList }) {
+export default function AddNewTask({ show, onClose, onTaskAdd, employeeList }) {
   // Form data state
   const [formData, setFormData] = useState({
-    id: '',
     name: '',
     assignedTo: '',
     status: 'To Do',
-    priority: 'Medium',
     dueDate: '',
     files: []
   });
@@ -16,11 +14,9 @@ export default function AddNewTask({ show, onClose, onTaskAdd,employeeList }) {
   // Handle modal close
   const handleClose = () => {
     setFormData({
-      id: '',
       name: '',
       assignedTo: '',
       status: 'To Do',
-      priority: 'Medium',
       dueDate: '',
       files: []
     });
@@ -32,6 +28,10 @@ export default function AddNewTask({ show, onClose, onTaskAdd,employeeList }) {
   // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    if(name==="dueDate" && value < new Date().toISOString().split('T')[0]){
+      alert("Due Date cannot be in the past");
+      return;
+    }
     setFormData(prevData => ({
       ...prevData,
       [name]: value
@@ -57,9 +57,8 @@ export default function AddNewTask({ show, onClose, onTaskAdd,employeeList }) {
       name: formData.name,
       assignedTo: formData.assignedTo,
       status: formData.status,
-      priority: formData.priority,
       dueDate: formData.dueDate,
-      files: formData.files
+      // files: formData.files
     };
     if (onTaskAdd) {
       onTaskAdd(newTask);
@@ -95,11 +94,21 @@ export default function AddNewTask({ show, onClose, onTaskAdd,employeeList }) {
               required
             >
               <option value="">Select assignee</option>
-              {employeeList && employeeList.map((emp, idx) => (
-                <option key={emp.id || idx} value={emp.name}>
-                  {emp.name}
-                </option>
-              ))}
+              {employeeList && employeeList.map((emp, idx) => {
+                // emp can be a string id/name or an object { _id, id, Name, name, role }
+                if (!emp) return null;
+                if (typeof emp === 'string' || typeof emp === 'number') {
+                  const val = String(emp);
+                  return (
+                    <option key={val + idx} value={val}>{val}</option>
+                  );
+                }
+                const id = emp._id || emp.id || emp.Name || emp.name || idx;
+                const label = emp.Name || emp.name || String(id);
+                return (
+                  <option key={id} value={id}>{label}</option>
+                );
+              })}
             </Form.Select>
           </Form.Group>
           <Form.Group className="mb-3">
@@ -112,22 +121,9 @@ export default function AddNewTask({ show, onClose, onTaskAdd,employeeList }) {
             >
               <option value="To Do">To Do</option>
               <option value="In Progress">In Progress</option>
-              <option value="Completed">Completed</option>
             </Form.Select>
           </Form.Group>
-          <Form.Group className="mb-3">
-            <Form.Label>Priority</Form.Label>
-            <Form.Select
-              name="priority"
-              value={formData.priority}
-              onChange={handleInputChange}
-              required
-            >
-              <option value="High">High</option>
-              <option value="Medium">Medium</option>
-              <option value="Low">Low</option>
-            </Form.Select>
-          </Form.Group>
+
           <Form.Group className="mb-3">
             <Form.Label>Due Date</Form.Label>
             <Form.Control

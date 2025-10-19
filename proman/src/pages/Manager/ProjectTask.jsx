@@ -5,30 +5,68 @@ import Sidebar from "../../components/Sidebar";
 import Navbar from "../../components/Navbar";
 import DisplayProjectInformation from "../../components/DisplayProjectInformation";
 import { getProjects, update, subscribe } from "../../Data/Projects";
+import { getTasks, Add as AddTask, update as UpdateTask, del as DeleteTask, subscribe as subscribeTasks } from "../../Data/Tasks";
 import AddNewTask from "../../components/AddNewTask";
 import EditTask from "../../components/EditTask";
+import { useUser } from "../../contexts/UserContext";
 
 export default function ProjectTask() {
   const { id } = useParams();
-  const [project, setProject] = useState(getProjects().find(p => p.Id == id) || {});
-  const [tasks, setTasks] = useState(project.task || []);
+  const { user } = useUser();
+  const managerId = user?._id; // Use user ID from context, fallback to 101
+  // Start with empty values; we'll populate from the global store via subscribe
+  const [project, setProject] = useState({});
+  const [tasks, setTasks] = useState([]);
   const [showUpdateTask, setUpdateTask] = useState(false);
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
-
   // Sync with global project/task changes
   useEffect(() => {
+    let mounted = true;
     const unsub = subscribe((allProjects) => {
-      const updatedProject = allProjects.find(p => p.Id == id) || {};
+      if (!Array.isArray(allProjects)) return;
+      const updatedProject = allProjects.find((p) => p._id === id) || {};
+      if (!mounted) return;
       setProject(updatedProject);
-      setTasks(updatedProject.task || []);
     });
-    // Initial load
-    const updatedProject = getProjects().find(p => p.Id == id) || {};
-    setProject(updatedProject);
-    setTasks(updatedProject.task || []);
-    return unsub;
-  }, [id]);
+
+    // subscribe to tasks store
+    const unsubTasks = subscribeTasks((ts) => {
+      if (!mounted) return;
+      if (Array.isArray(ts)) setTasks(ts);
+    });
+
+    // Initial load: fetch projects for this manager so the store is populated
+    (async () => {
+      try {
+        if (managerId) {
+          const all = await getProjects(managerId);
+          const updatedProject = Array.isArray(all) ? all.find((p) => p._id === id) || {} : {};
+          if (mounted) {
+            setProject(updatedProject);
+            // initial load tasks for this project from Tasks store
+            const load = async () => {
+              try {
+                const ts = await getTasks(id);
+                if (mounted) setTasks(Array.isArray(ts) ? ts : []);
+              } catch (err) {
+                console.error('Failed to load tasks for project:', err);
+              }
+            };
+            load();
+          }
+        }
+      } catch (err) {
+        console.error("ProjectTask initial load error:", err);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+      if (typeof unsub === 'function') unsub();
+      if (typeof unsubTasks === 'function') unsubTasks();
+    };
+  }, [id, managerId]);
 
   function addNewTask() {
     setShowCreateTask(true);
@@ -41,26 +79,20 @@ export default function ProjectTask() {
 
   // Only update global store, let subscribe update local state
   function handleAddTask(newTask) {
-const maxId = project.task?.length 
-                ? Math.max(...project.task.map(t => t.id)) 
-                : 0;
-                
-  const taskWithId = { ...newTask, id: maxId + 1 };
-    update({ ...project, task: [...(project.task || []), taskWithId] });
+    // Attach projectId and call Tasks.Add
+    const payload = { ...newTask, projectId: id };
+    AddTask(payload).catch((e) => console.error('AddTask failed:', e));
   }
 
   function handleTaskUpdate(updatedTask) {
-    update({
-      ...project,
-      task: (project.task || []).map(t => t.id === updatedTask.id ? updatedTask : t)
-    });
+    if (!updatedTask) return;
+    const payload = { ...updatedTask, projectId: id };
+    UpdateTask(payload).catch((e) => console.error('UpdateTask failed:', e));
   }
 
   function handleDeleteTask(taskId) {
-    update({
-      ...project,
-      task: (project.task || []).filter(t => t.id !== taskId)
-    });
+    if (!taskId) return;
+    DeleteTask(taskId, id).catch((e) => console.error('DeleteTask failed:', e));
   }
 
   return (
@@ -122,10 +154,10 @@ const maxId = project.task?.length
                     </tr>
                   ) : (
                     tasks.map((task, idx) => (
-                      <tr key={task.id}>
+                      <tr key={task._id}>
                         <td>{idx + 1}</td>
                         <td>{task.name}</td>
-                        <td>{task.assignedTo}</td>
+                        <td>{task.assignedTo?.Name}</td>
                         <td>
                           <Badge
                             bg={
@@ -152,7 +184,14 @@ const maxId = project.task?.length
                             {task.priority}
                           </Badge>
                         </td>
-                        <td style={{ whiteSpace: "nowrap" }}>{task.dueDate}</td>
+                        {(() => {
+                          const isOverdue = (task && task._doc && task._doc.isOverdue) || task.isOverdue;
+                          return (
+                            <td style={{ whiteSpace: "nowrap", color: isOverdue ? '#b00020' : undefined }}>
+                              {task.dueDate} {isOverdue && <Badge bg="danger" style={{ marginLeft: 8 }}>Overdue</Badge>}
+                            </td>
+                          );
+                        })()}
                         <td>
                           {task.files && task.files.length > 0 ? (
                             task.files.map((file, fidx) => (
@@ -196,7 +235,7 @@ const maxId = project.task?.length
                             <Button
                               variant="danger"
                               size="sm"
-                              onClick={() => handleDeleteTask(task.id)}
+                              onClick={() => handleDeleteTask(task._id)}
                               style={{ minWidth: "70px" }}
                             >
                               Delete
@@ -210,7 +249,7 @@ const maxId = project.task?.length
               </Table>
             </Row>
             <Row>
-              <Button variant="success" className="mb-2" onClick={addNewTask}>
+              <Button variant="success" className="mb-2" onClick={addNewTask} disabled={project.Status!=="Active"}>
                 Add New Task
               </Button>
             </Row>
@@ -222,7 +261,7 @@ const maxId = project.task?.length
         show={showCreateTask}
         onClose={() => setShowCreateTask(false)}
         onTaskAdd={handleAddTask}
-        employeeList={project.team}
+        employeeList={project.team || []}
       />
 
       <EditTask
@@ -230,7 +269,7 @@ const maxId = project.task?.length
         show={showUpdateTask}
         onClose={() => setUpdateTask(false)}
         onTaskUpdate={handleTaskUpdate}
-        employeeList={project.team}
+        employeeList={Array.isArray(project.team) ? project.team : []}
       />
     </div>
   );

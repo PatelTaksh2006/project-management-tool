@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Modal, Button, Form, Row, Col, ListGroup } from "react-bootstrap";
-import employeeList from "../Data/Employee";
+import { getEmployees } from "../Data/Employee";
 
 export default function EditProject({
   project,
@@ -10,18 +10,26 @@ export default function EditProject({
   
 }) {
   // All employees in the system
-  const allEmployees = employeeList;
+  const [allEmployees, setAllEmployees] = useState([]);
+
+  // Load employees when component mounts
+  useEffect(() => {
+    const loadEmployees = async () => {
+      const employees = await getEmployees();
+      setAllEmployees(employees);
+    };
+    loadEmployees();
+  }, []);
 
   // Initialize form data with the project prop
   const [formData, setFormData] = useState({
-    Id: "",
+    _id: "",
     Name: "",
-    Start_Date: "",
-    End_date: "",
+    StartDate: "",
+    EndDate: "",
     Status: "Active",
     client: "",
     description: "",
-    stakeholders: "",
     budget: "",
     team: [],
   });
@@ -32,32 +40,64 @@ export default function EditProject({
   // Employees not in the team
   const [availableEmployees, setAvailableEmployees] = useState([]);
 
+  // Helper to normalize dates to YYYY-MM-DD
+  const normalizeDate = (d) => {
+    if (!d) return "";
+    const dateObj = new Date(d);
+    if (isNaN(dateObj)) return "";
+    const yyyy = dateObj.getFullYear();
+    const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const dd = String(dateObj.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  // Store original team objects from the incoming project so we can revert when needed
+  const [originalTeam, setOriginalTeam] = useState([]);
+
   // Update form data and employee lists when project prop changes
   useEffect(() => {
     if (project) {
+      // project.team may be an array of IDs or an array of member objects
+      const rawTeam = project.team || [];
+      const teamIds = rawTeam.map(t => (t && typeof t === 'object') ? (t._id || t.id) : t);
+      const teamObjs = allEmployees.filter(emp => teamIds.includes(emp._id));
+
       setFormData({
-        Id: project.Id || "",
-        Name: project.Name || "",
-        Start_Date: project.Start_Date || "",
-        End_date: project.End_date || "",
-        Status: project.Status || "Active",
-        client: project.client || "",
-        description: project.description || "",
-        stakeholders: project.stakeholders
-          ? project.stakeholders.join(", ")
-          : "",
-        budget: project.budget || "",
-        team: project.team || [],
+        ...project,
+        StartDate: normalizeDate(project.StartDate || project.Start_Date || project.StartDate),
+        EndDate: normalizeDate(project.EndDate || project.End_date || project.EndDate),
+        team: teamObjs,
       });
-      setSelectedTeam(project.team || []);
+      setSelectedTeam(teamObjs);
+      setOriginalTeam(teamObjs);
     }
-  }, [project, show]);
+  }, [project, show, allEmployees]);
+
+  // Determine lock condition: whenever the form status is 'Completed', lock all fields except Status
+
+  // When status becomes 'Completed', immediately revert editable fields and team back to original project values
+  useEffect(() => {
+    if (formData.Status === 'Completed' && project) {
+      setFormData((prev) => ({
+        ...prev,
+        Name: project.Name,
+        client: project.client,
+        description: project.description,
+        budget: project.budget || prev.budget,
+        StartDate: normalizeDate(project.StartDate || project.Start_Date || project.StartDate),
+        EndDate: normalizeDate(project.EndDate || project.End_date || project.EndDate),
+      }));
+      // revert selected team to original
+      setSelectedTeam(originalTeam);
+    }
+  }, [formData.Status, project, originalTeam]);
+
 
   // Update available employees whenever selectedTeam changes
   useEffect(() => {
-    const selectedIds = new Set(selectedTeam.map((emp) => emp.id));
+    const selectedIds = new Set(selectedTeam.map((emp) => emp._id));
     setAvailableEmployees(
-      allEmployees.filter((emp) => !selectedIds.has(emp.id))
+      allEmployees.filter((emp) => !selectedIds.has(emp._id))
     );
   }, [selectedTeam, allEmployees]);
 
@@ -66,12 +106,11 @@ export default function EditProject({
     setFormData({
       Id: "",
       Name: "",
-      Start_Date: "",
-      End_date: "",
+      StartDate: "",
+      EndDate: "",
       Status: "Active",
       client: "",
       description: "",
-      stakeholders: "",
       budget: "",
       team: [],
     });
@@ -83,6 +122,12 @@ export default function EditProject({
   // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    if(name==="Status" && value === "Completed"){
+      if(project.tasks.find(t => t.status !== "Completed")){
+        alert("Cannot mark project as Completed while there are incomplete tasks.");
+        return;
+      }
+    }
     setFormData((prevData) => ({
       ...prevData,
       [name]: value,
@@ -92,37 +137,54 @@ export default function EditProject({
 
   // Add employee to team
   const handleAddEmployee = (emp) => {
+    if (formData.Status !== 'Active') return; // ignore when not active
     setSelectedTeam((prev) => [...prev, emp]);
   };
 
   // Remove employee from team
   const handleRemoveEmployee = (empId) => {
-    setSelectedTeam((prev) => prev.filter((emp) => emp.id !== empId));
+    if (formData.Status !== 'Active') return; // ignore when not active
+    setSelectedTeam((prev) => prev.filter((emp) => emp._id !== empId));
   };
 
   // Handle form submission
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Convert comma-separated stakeholders to array
-    const stakeholdersArr = formData.stakeholders
-      ? formData.stakeholders.split(",").map((s) => s.trim()).filter(Boolean)
-      : [];
 
-    const updatedProject = {
-  ...project, // keep all existing properties (managerId, task, milestones, etc.)
-  Id: formData.Id,
-  Name: formData.Name,
-  Employees: selectedTeam.length,
-  Start_Date: formData.Start_Date,
-  End_date: formData.End_date,
-  Status: formData.Status,
-  client: formData.client,
-  description: formData.description,
-  stakeholders: stakeholdersArr,
-  budget: Number(formData.budget) || 0,
-  team: selectedTeam,
-};
+// If project is not Active, preserve the original team (don't apply UI changes)
+let teamMembers;
+if (formData.Status !== 'Active' && project && project.team) {
+  // preserve existing team ids from project
+  const rawTeam = project.team || [];
+  teamMembers = rawTeam.map(t => (t && typeof t === 'object') ? (t._id || t.id) : t);
+} else {
+  teamMembers = selectedTeam.map(emp => emp._id);
+}
+
+let updatedProject;
+if (formData.Status === 'Completed') {
+  // Only allow Status updates; preserve other fields from original project
+  updatedProject = {
+    ...project,
+    _id: formData._id,
+    Status: formData.Status,
+  };
+} else {
+  updatedProject = {
+    ...project,
+    _id: formData._id,
+    Name: formData.Name,
+    Employees: selectedTeam.length,
+    StartDate: formData.StartDate,
+    EndDate: formData.EndDate,
+    Status: formData.Status,
+    client: formData.client,
+    description: formData.description,
+    budget: Number(formData.budget) || 0,
+    team: teamMembers,   // <--- only IDs go to backend
+  };
+}
 
 
     if (onProjectUpdate) {
@@ -136,9 +198,10 @@ export default function EditProject({
       <Modal.Header closeButton>
         <Modal.Title>Edit Project</Modal.Title>
       </Modal.Header>
-      <Form onSubmit={handleSubmit}>
+      <Form onSubmit={handleSubmit} >
         <Modal.Body>
           {/* Project Name */}
+          
           <Form.Group className="mb-3">
             <Form.Label>Project Name</Form.Label>
             <Form.Control
@@ -148,6 +211,7 @@ export default function EditProject({
               onChange={handleInputChange}
               placeholder="Enter project name"
               required
+              disabled={formData.Status !== 'Pending'}
             />
           </Form.Group>
           {/* Client */}
@@ -159,6 +223,7 @@ export default function EditProject({
               value={formData.client}
               onChange={handleInputChange}
               placeholder="Enter client name"
+              disabled={formData.Status !== 'Pending'}
             />
           </Form.Group>
           {/* Description */}
@@ -170,19 +235,10 @@ export default function EditProject({
               value={formData.description}
               onChange={handleInputChange}
               placeholder="Enter project description"
+              disabled={formData.Status === 'Completed'}
             />
           </Form.Group>
-          {/* Stakeholders */}
-          <Form.Group className="mb-3">
-            <Form.Label>Stakeholders (comma separated)</Form.Label>
-            <Form.Control
-              type="text"
-              name="stakeholders"
-              value={formData.stakeholders}
-              onChange={handleInputChange}
-              placeholder="e.g. IT, HR, CEO"
-            />
-          </Form.Group>
+          
           {/* Budget */}
           <Form.Group className="mb-3">
             <Form.Label>Budget</Form.Label>
@@ -192,10 +248,54 @@ export default function EditProject({
               value={formData.budget}
               onChange={handleInputChange}
               placeholder="Enter budget"
+              disabled={formData.Status !== "Pending" }
             />
           </Form.Group>
-          {/* Team Members */}
+          
+          {/* Start Date */}
           <Form.Group className="mb-3">
+            <Form.Label>Start Date</Form.Label>
+            <Form.Control
+              type="date"
+              name="StartDate"
+              value={formData.StartDate}
+              onChange={handleInputChange}
+              required
+              disabled={formData.Status !== 'Pending'}
+            />
+          </Form.Group>
+          {/* End Date */}
+          <Form.Group className="mb-3">
+            <Form.Label>End Date</Form.Label>
+            <Form.Control
+              type="date"
+              name="EndDate"
+              value={formData.EndDate}
+              onChange={handleInputChange}
+              required
+              disabled={formData.Status === 'Completed'}
+            />
+          </Form.Group>
+          {/* Status */}
+          <Form.Group className="mb-3">
+            <Form.Label>Status</Form.Label>
+            <Form.Select
+              name="Status"
+              value={formData.Status}
+              onChange={handleInputChange}
+              required
+            >
+              <option value="Active">Active</option>
+              <option value="Pending">Pending</option>
+              <option value="Completed">Completed</option>
+            </Form.Select>
+          </Form.Group>
+          {formData.Status !== "Active" && (
+            <span>This project is not active. Team changes are not allowed.</span>
+          )}
+          {/* Team Members */}
+          
+          <Form.Group className="mb-3" style={{ display: formData.Status !== "Active" ? "none" : "block" }}>
             <Form.Label>Team Members</Form.Label>
             <Row>
               <Col md={6}>
@@ -207,14 +307,15 @@ export default function EditProject({
                     )}
                     {selectedTeam.map((emp) => (
                       <ListGroup.Item
-                        key={emp.id}
+                        key={emp._id}
                         className="d-flex justify-content-between align-items-center"
                       >
-                        {emp.name} ({emp.role})
+                        {emp.Name} ({emp.role})
                         <Button
                           variant="outline-danger"
                           size="sm"
-                          onClick={() => handleRemoveEmployee(emp.id)}
+                          onClick={() => handleRemoveEmployee(emp._id)}
+                          disabled={formData.Status !== "Active" || formData.Status === 'Completed'}
                         >
                           Remove
                         </Button>
@@ -232,14 +333,15 @@ export default function EditProject({
                     )}
                     {availableEmployees.map((emp) => (
                       <ListGroup.Item
-                        key={emp.id}
+                        key={emp._id}
                         className="d-flex justify-content-between align-items-center"
                       >
-                        {emp.name} ({emp.role})
+                        {emp.Name} ({emp.role})
                         <Button
                           variant="outline-primary"
                           size="sm"
                           onClick={() => handleAddEmployee(emp)}
+                          disabled={formData.Status !== "Active" || formData.Status === 'Completed'}
                         >
                           Add
                         </Button>
@@ -249,42 +351,6 @@ export default function EditProject({
                 </div>
               </Col>
             </Row>
-          </Form.Group>
-          {/* Start Date */}
-          <Form.Group className="mb-3">
-            <Form.Label>Start Date</Form.Label>
-            <Form.Control
-              type="date"
-              name="Start_Date"
-              value={formData.Start_Date}
-              onChange={handleInputChange}
-              required
-            />
-          </Form.Group>
-          {/* End Date */}
-          <Form.Group className="mb-3">
-            <Form.Label>End Date</Form.Label>
-            <Form.Control
-              type="date"
-              name="End_date"
-              value={formData.End_date}
-              onChange={handleInputChange}
-              required
-            />
-          </Form.Group>
-          {/* Status */}
-          <Form.Group className="mb-3">
-            <Form.Label>Status</Form.Label>
-            <Form.Select
-              name="Status"
-              value={formData.Status}
-              onChange={handleInputChange}
-              required
-            >
-              <option value="Active">Active</option>
-              <option value="Pending">Pending</option>
-              <option value="Completed">Completed</option>
-            </Form.Select>
           </Form.Group>
         </Modal.Body>
         <Modal.Footer>

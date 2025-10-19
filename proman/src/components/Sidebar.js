@@ -38,7 +38,7 @@ export default function Sidebar({ user, value, id_name }) {
         {user === "employee" && (
           <li>
             <Link
-              to={`${base_path}/task/${id_name}`}
+              to={`${base_path}/tasks`}
               className={`nav-link ${isActive("task") ? "active text-white" : "link-dark"}`}
               aria-current={isActive("task") ? "page" : undefined}
             >

@@ -1,124 +1,56 @@
-const employees = [
-  {
-    id: 1,
-    name: "Alice Johnson",
-    email: "alice.johnson@example.com",
-    role: "Designer",
-    department: "UI/UX",
-    managerId: 101,
-    status: "Active",
-    joiningDate: "2023-04-15",
-    phone: "9876543210",
-    address: "123 Main St, Cityville",
-  },
-  {
-    id: 2,
-    name: "Bob Smith",
-    email: "bob.smith@example.com",
-    role: "Developer",
-    department: "Engineering",
-    managerId: 101,
-    status: "Active",
-    joiningDate: "2022-11-01",
-    phone: "9876543211",
-    address: "456 Oak Ave, Townsville",
-  },
-  {
-    id: 3,
-    name: "Charlie Lee",
-    email: "charlie.lee@example.com",
-    role: "QA",
-    department: "Quality Assurance",
-    managerId: 101,
-    status: "Active",
-    joiningDate: "2024-01-10",
-    phone: "9876543212",
-    address: "789 Pine Rd, Villagetown",
-  },
-  {
-    id: 4,
-    name: "David Kim",
-    email: "david.kim@example.com",
-    role: "Backend Developer",
-    department: "Engineering",
-    managerId: 102,
-    status: "Active",
-    joiningDate: "2023-07-20",
-    phone: "9876543213",
-    address: "321 Maple St, Cityville",
-  },
-  {
-    id: 5,
-    name: "Eva Brown",
-    email: "eva.brown@example.com",
-    role: "Frontend Developer",
-    department: "Engineering",
-    managerId: 102,
-    status: "Active",
-    joiningDate: "2022-09-05",
-    phone: "9876543214",
-    address: "654 Cedar Ave, Townsville",
-  },
-  {
-    id: 6,
-    name: "Frank Wilson",
-    email: "frank.wilson@example.com",
-    role: "Data Analyst",
-    department: "Analytics",
-    managerId: 103,
-    status: "Active",
-    joiningDate: "2023-02-18",
-    phone: "9876543215",
-    address: "987 Spruce Rd, Villagetown",
-  },
-  {
-    id: 7,
-    name: "Grace Lee",
-    email: "grace.lee@example.com",
-    role: "QA",
-    department: "Quality Assurance",
-    managerId: 104,
-    status: "Inactive",
-    joiningDate: "2021-12-12",
-    phone: "9876543216",
-    address: "159 Elm St, Cityville",
-  },
-  {
-    id: 8,
-    name: "Henry Adams",
-    email: "henry.adams@example.com",
-    role: "Project Coordinator",
-    department: "Management",
-    managerId: 105,
-    status: "Active",
-    joiningDate: "2023-06-30",
-    phone: "9876543217",
-    address: "753 Willow Ave, Townsville",
-  },
-  {
-    id: 9,
-    name: "Ivy Chen",
-    email: "ivy.chen@example.com",
-    role: "Support Engineer",
-    department: "Support",
-    managerId: 106,
-    status: "Active",
-    joiningDate: "2022-10-25",
-    phone: "9876543218",
-    address: "852 Birch Rd, Villagetown",
-  },
-  {
-    id: 10,
-    name: "Jack Turner",
-    email: "jack.turner@example.com",
-    role: "DevOps Engineer",
-    department: "IT",
-    managerId: 107,
-    status: "Active",
-    joiningDate: "2023-03-14",
-    phone: "9876543219",
-    address: "951 Aspen St, Cityville",
-  },
+let employees = [
 ];
 
+const listeners = [];
+
+function notify() {
+  listeners.forEach((cb) => cb(employees));
+}
+
+async function Add(newEmployee) {
+  employees.push(newEmployee);
+    
+  const res=await fetch("http://localhost:3001/api/emp/add",{
+    method:"POST",
+    headers: {
+    'Content-Type': 'application/json'  // must be an object with string keys and string values
+  },
+    body:JSON.stringify(newEmployee)
+  })
+  notify();
+}
+
+function update(updatedEmployee) {
+  employees = employees.map(e => (e._id === updatedEmployee._id ? updatedEmployee : e));
+  notify();
+}
+
+function del(employeeId) {
+  employees = employees.filter((e) => e._id !== employeeId);
+  notify();
+}
+
+
+
+// Subscribe to changes (for React components)
+function subscribe(cb) {
+  listeners.push(cb);
+  return () => {
+    const idx = listeners.indexOf(cb);
+    if (idx > -1) listeners.splice(idx, 1);
+  };
+}
+
+// Get the latest employees (for React state initialization)
+async function getEmployees() {
+  const res = await fetch("http://localhost:3001/api/emp/getAll");
+  if (res.ok) {
+    const data = await res.json();
+    employees = data.emps;
+    notify();
+  }
+  return employees;
+}
+
 export default employees;
+export { Add, update, del, subscribe, getEmployees };

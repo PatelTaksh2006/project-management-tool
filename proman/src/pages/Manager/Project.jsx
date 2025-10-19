@@ -8,13 +8,19 @@ import { getProjects, Add, update, del, subscribe } from "../../Data/Projects";
 import DisplayProject from "../../components/DisplayProject";
 import { useNavigate } from 'react-router-dom';
 import SortDropdown from "../../components/SortDropdown";
-import Employee from "../../Data/Employee";
-
+import employees, { getEmployees } from "../../Data/Employee";
+import { useUser } from "../../contexts/UserContext";
 export default function Project() {
-  let id = 101; // Example manager ID, replace with actual logic to get current manager ID
+  const {user} = useUser();
+  if(user)
+  console.log(user);
+else
+  console.log("no user");
+  let id = user?._id; // Use user ID from context, fallback to 101
 
   // Use projects as the source of truth, subscribe to changes
-  const [projects, setProjects] = useState(getProjects().filter(p => p.managerId === id));
+  const [projects, setProjects] = useState([]);
+  const [employeeList, setEmployeeList] = useState([]);
   const [sortedValue, setSortedValue] = useState("None");
   const [searchValue, setSearchValue] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -23,12 +29,27 @@ export default function Project() {
   // Keep projects in sync with global store
   useEffect(() => {
     const unsub = subscribe((allProjects) => {
-      setProjects(allProjects.filter(p => p.managerId === id));
+      setProjects(allProjects); // Backend already filters by managerId
     });
     // Initial load in case subscribe is async
-    setProjects(getProjects().filter(p => p.managerId === id));
-    return unsub;
+    const loadProjects = async () => {
+    const allProjects = await getProjects(id); // wait for async fetch - already filtered by backend
+    setProjects(allProjects);
+  };
+
+  if (id) loadProjects();
+
+  return unsub;
   }, [id]);
+
+  // Load employees
+  useEffect(() => {
+    const loadEmployees = async () => {
+      const allEmployees = await getEmployees();
+      setEmployeeList(allEmployees);
+    };
+    loadEmployees();
+  }, []);
 
   // Project summary counts (always up-to-date)
   const activeCount = useMemo(() => projects.filter(p => p.Status === "Active").length, [projects]);
@@ -70,15 +91,17 @@ export default function Project() {
     // No need to update state here, subscribe will handle it
   };
   const onProjectUpdate = (updatedProject) => {
+    updatedProject.managerId = id; // Ensure managerId is set
     update(updatedProject);
     // No need to update state here, subscribe will handle it
   };
   const navigate = useNavigate();
+
   const onViewProject = (id) => {
     navigate(`/manager/projects/${id}`);
   };
   const onProjectDelete = (projectId) => {
-    del(projectId);
+    del(projectId, id);
     // No need to update state here, subscribe will handle it
   };
   const searchForValue = (value) => {
@@ -169,7 +192,7 @@ export default function Project() {
               <Table striped bordered hover responsive>
                 <thead>
                   <tr>
-                    <th>#</th>
+                    {/* <th>#</th> */}
                     <th>Name</th>
                     <th>Employees</th>
                     <th>Start Date</th>
@@ -181,7 +204,7 @@ export default function Project() {
                 <tbody>
                   {filteredProjects.map((element, idx) => (
                     <DisplayProject
-                      key={element.Id}
+                      key={element._id}
                       ele={element}
                       index={idx}
                       onProjectUpdate={onProjectUpdate}
@@ -198,7 +221,7 @@ export default function Project() {
       <AddNewProject
         show={show}
         onClose={() => setShow(false)}
-        EmployeeList={Employee}
+        EmployeeList={employeeList}
         onProjectAdd={handleAddProject}
       />
     </div>

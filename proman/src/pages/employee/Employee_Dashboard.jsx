@@ -2,14 +2,20 @@ import React from "react";
 import Navbar from "../../components/Navbar";
 import Sidebar from "../../components/Sidebar";
 import { Row, Col, Card, Badge, ProgressBar, ListGroup, Container } from "react-bootstrap";
+import { useUser } from "../../contexts/UserContext";
 
 export default function Employee_Dashboard() {
+  const { user } = useUser();
+  
+  const employeeId = user?._id || user?.id || user?.Id;
+  const employeeName = user?.name || user?.Name || user?.Email || "Employee";
+  
   return (
     <div className="bg-light min-vh-100">
       <Navbar name="employee" />
       <Row className="g-0">
         <Col md={3} className="border-end bg-white">
-          <Sidebar user="employee" value="dashboard" id_name="Frank"/>
+          <Sidebar user="employee" value="dashboard" id_name={employeeName}/>
         </Col>
 
         <Col md={9} className="p-4">

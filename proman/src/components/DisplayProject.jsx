@@ -17,22 +17,22 @@ export default function DisplayProject({ ele, onProjectUpdate, onProjectDelete ,
 
   function handleDeleteClick() {
     if (window.confirm(`Are you sure you want to delete project "${ele.Name}"?`)) {
-      onProjectDelete(ele.Id);
+      onProjectDelete(ele._id);
     }
   }
 
   function handleViewClick() {
-    onViewProject(ele.Id);
+    onViewProject(ele._id);
   }
 
   return (
     <>
       <tr>
-        <td>{ele.Id}</td>
+        {/* <td>{ele._id}</td> */}
         <td>{ele.Name}</td>
-        <td>{ele.Employees}</td>
-        <td>{ele.Start_Date}</td>
-        <td>{ele.End_date}</td>
+        <td>{ele.team?.length}</td>
+        <td>{formatDateOnly(ele.StartDate)}</td>
+        <td>{formatDateOnly(ele.EndDate)}</td>
         <td>{ele.Status}</td>
         <td style={{ textAlign: "center" }}>
           <Button className="me-2" variant="primary" onClick={handleViewClick}>
@@ -58,4 +58,14 @@ export default function DisplayProject({ ele, onProjectUpdate, onProjectDelete ,
       
     </>
   );
+}
+
+function formatDateOnly(value) {
+  if (!value) return "";
+  const d = new Date(value);
+  if (isNaN(d)) return String(value).split('T')[0] || "";
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
 }

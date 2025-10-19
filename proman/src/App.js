@@ -5,18 +5,24 @@ import ProjectTask from "./pages/Manager/ProjectTask";
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Employee_Dashboard from "./pages/employee/Employee_Dashboard";
 import Employee_task from "./pages/employee/Employee_task";
+import Login from "./pages/shared/login";
+import Signup from "./pages/shared/signup";
+import { UserProvider } from "./contexts/UserContext";
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/manager/projects/:id" element={<ProjectTask />}></Route>
-        <Route path="/manager" element={<Manager_Dashboard />}></Route>
-        <Route path="/manager/project" element={<Manager_Project />}></Route>
-        <Route path="/employee" element={<Employee_Dashboard />}></Route>
-        <Route path="/employee/task/:employeeName" element={<Employee_task />}></Route>
-      </Routes>
-    </Router>
-    
+    <UserProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Login />}></Route>
+          <Route path="/signup" element={<Signup />}></Route>
+          <Route path="/manager/projects/:id" element={<ProjectTask />}></Route>
+          <Route path="/manager" element={<Manager_Dashboard />}></Route>
+          <Route path="/manager/project" element={<Manager_Project />}></Route>
+          <Route path="/employee" element={<Employee_Dashboard />}></Route>
+          <Route path="/employee/tasks" element={<Employee_task />}></Route>
+        </Routes>
+      </Router>
+    </UserProvider>
   );
 }
 
