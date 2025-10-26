@@ -9,7 +9,6 @@ const router = express.Router();
 // Add a new task and attach it to the project (and user if assigned)
 router.post('/add', async (req, res) => {
     try {
-        console.log('Create Task body:', req.body);
         const newTask = new Task(req.body);
                 // normalize and update dueDate & priority based on days difference
                 if (!newTask.dueDate) {
@@ -42,14 +41,13 @@ router.post('/add', async (req, res) => {
         }
 
         // if assignedTo provided, you may want to attach reference to user (optional)
-        if (req.body.assignedTo && mongoose.Types.ObjectId.isValid(req.body.assignedTo)) {
+                if (req.body.assignedTo && mongoose.Types.ObjectId.isValid(req.body.assignedTo)) {
             const user = await User.findById(req.body.assignedTo);
             if (user) {
                 // optionally you could push task id to a user.tasks array if schema has one
                 // For now just log the assignment
                 user.tasks.push(newTask._id);
                 await user.save();
-                console.log(`Assigned task ${newTask._id} to user ${user._id}`);
             }
         }
 
@@ -63,7 +61,6 @@ router.post('/add', async (req, res) => {
 // Get all tasks for a project or all tasks
 router.get('/getAll', async (req, res) => {
     try {
-        console.log('Query:', req.query);
         const { projectId } = req.query;
         let tasks;
         if (projectId && mongoose.Types.ObjectId.isValid(projectId)) {
@@ -79,7 +76,6 @@ router.get('/getAll', async (req, res) => {
             // }
 
             let priority=element.dueDate - todayDate;
-            console.log(priority);
             let flagForDueDate=false;
             if (!element.dueDate) {
                 element.priority = 'Low';
@@ -112,17 +108,15 @@ element._doc.isOverdue = flagForDueDate;
 // Update task
 router.put('/update', async (req, res) => {
     try {
-        console.log('Update Task body:', req.body);
         const tempTask=await Task.findById(req.body._id);
         const updatedTask = await Task.findByIdAndUpdate(req.body._id, req.body, { new: true });
         if(tempTask.assignedTo.toString()!==req.body.assignedTo._id){
             // Remove task from old user's tasks array
             if (tempTask.assignedTo && mongoose.Types.ObjectId.isValid(tempTask.assignedTo.toString())) {
                 const oldUser = await User.findById(tempTask.assignedTo.toString());
-                if (oldUser) {
+                    if (oldUser) {
                     oldUser.tasks = oldUser.tasks.filter(taskId => taskId.toString() !== tempTask._id.toString());
                     await oldUser.save();
-                    console.log(`Removed task ${tempTask._id} from user ${oldUser._id}`);
                 }
             }
 
@@ -130,24 +124,21 @@ router.put('/update', async (req, res) => {
             if (newUser) {
                 newUser.tasks.push(tempTask._id);
                 await newUser.save();
-                console.log(`Assigned task ${tempTask._id} to user ${newUser._id}`);
             }
         }
-
+        console.log(`Updated Task: ${updatedTask}`);
         let oldFiles=tempTask.files;
         let updatedFiles=updatedTask.files;
-        let filesTodelete=oldFiles.filter(file => !updatedFiles.includes(file));
-        console.log('Files to delete:', filesTodelete);
+        let filesTodelete=oldFiles.filter(file => !updatedFiles.some(newFile => file.url === newFile.url));
         filesTodelete.forEach(filepath => {
             const fullPath=`C:\\Users\\taksh\\Documents\\projects\\SEM5\\AT\\project-management-tool\\`+filepath.url;
-            console.log(`Deleting file: ${fullPath}`);
             fs.unlink(fullPath,(err)=>{
                 if(err){
                     console.error(`Error deleting file ${fullPath}:`, err);
                 }
             });
         });
-        console.log('Updated Task:', updatedTask);
+        
         res.send({ message: 'Task updated', task: updatedTask });
     } catch (error) {
         console.error(error);
@@ -164,7 +155,6 @@ router.delete('/delete', async (req, res) => {
 });
 
 router.get('/getByEmployee/:empId',async (req,res)=>{
-   console.log(req.params.empId);
     const tasks=await Task.find({assignedTo:req.params.empId}).populate('projectId');
     res.json({tasks});
 })

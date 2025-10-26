@@ -15,8 +15,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app=express()
 mongoose.connect("mongodb://127.0.0.1:27017/ProDb")
-.then(()=>console.log("connected"))
-.catch(err=>console.log("Not connected",err));
+.then(() => {})
+.catch(err => console.error("Not connected", err));
 
 app.use(cors({
     origin: 'http://localhost:3000', // allow only this origin
@@ -64,5 +64,5 @@ app.post('/api/upload', (req, res) => {
   });
 });
 app.listen(3001,()=>{
-    console.log("server started at 3001");
+  console.info("server started at 3001");
 });

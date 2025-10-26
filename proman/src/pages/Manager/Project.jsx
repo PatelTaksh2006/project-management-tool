@@ -116,105 +116,188 @@ else
           <Sidebar user={"manager"} value="project"/>
         </Col>
         <Col md={8}>
-          <Container className="fluid" style={{ paddingTop: 60, margin: 20 }}>
+          <div style={{
+            background: '#4f46e5',
+            color: 'white',
+            padding: '30px',
+            marginBottom: '30px'
+          }}>
+            <h2 style={{ margin: 0, fontSize: '24px', fontWeight: '600' }}>
+              📋 Project Management
+            </h2>
+            <p style={{ margin: '8px 0 0 0', opacity: 0.9, fontSize: '14px' }}>
+              Manage and track all your projects in one place
+            </p>
+          </div>
+          {/* Project summary cards */}
+          <Container style={{ marginBottom: '20px' }}>
             <Row>
-              <Col xs={12} md={6}>
-                <h3 className="mb-0">Projects</h3>
-                <div className="text-muted small">
-                  Manage and track all projects in one place
+              <Col sm={4} style={{ padding: '0 8px', marginBottom: '16px' }}>
+                <div style={{
+                  background: 'white',
+                  borderRadius: '12px',
+                  padding: '20px',
+                  textAlign: 'center',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  border: '1px solid #e5e7eb'
+                }}>
+                  <div style={{
+                    background: '#10b981',
+                    color: 'white',
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    marginBottom: '8px'
+                  }}>
+                    Active Projects
+                  </div>
+                  <div style={{ fontSize: '24px', fontWeight: '700', color: '#374151' }}>
+                    {activeCount}
+                  </div>
+                </div>
+              </Col>
+              <Col sm={4} style={{ padding: '0 8px', marginBottom: '16px' }}>
+                <div style={{
+                  background: 'white',
+                  borderRadius: '12px',
+                  padding: '20px',
+                  textAlign: 'center',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  border: '1px solid #e5e7eb'
+                }}>
+                  <div style={{
+                    background: '#3b82f6',
+                    color: 'white',
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    marginBottom: '8px'
+                  }}>
+                    Completed Projects
+                  </div>
+                  <div style={{ fontSize: '24px', fontWeight: '700', color: '#374151' }}>
+                    {completedCount}
+                  </div>
+                </div>
+              </Col>
+              <Col sm={4} style={{ padding: '0 8px', marginBottom: '16px' }}>
+                <div style={{
+                  background: 'white',
+                  borderRadius: '12px',
+                  padding: '20px',
+                  textAlign: 'center',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  border: '1px solid #e5e7eb'
+                }}>
+                  <div style={{
+                    background: '#f59e0b',
+                    color: 'white',
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    marginBottom: '8px'
+                  }}>
+                    Pending Projects
+                  </div>
+                  <div style={{ fontSize: '24px', fontWeight: '700', color: '#374151' }}>
+                    {pendingCount}
+                  </div>
                 </div>
               </Col>
             </Row>
           </Container>
-          {/* Project summary bar */}
+          {/* Controls and table container */}
           <Container>
-            <Row className="mb-2">
-              <Col sm={4}>
-                <div className="p-2 bg-success text-white rounded text-center">
-                  Active: {activeCount}
-                </div>
-              </Col>
-              <Col sm={4}>
-                <div className="p-2 bg-primary text-white rounded text-center">
-                  Completed: {completedCount}
-                </div>
-              </Col>
-              <Col sm={4}>
-                <div className="p-2 bg-warning text-dark rounded text-center">
-                  Pending: {pendingCount}
-                </div>
-              </Col>
-            </Row>
-          </Container>
-          {/* Filter/search/sort controls and Add button */}
-          <Container>
-            <Row className="align-items-center mb-1">
-              <Col md={3} style={{ paddingTop: "10px" }}>
-                <Search_form
-                  searchValue={searchValue}
-                  setSearchValue={searchForValue}
-                  inputWidth="200px"
-                />
-              </Col>
-              <Col md={3} style={{ paddingTop: "10px" }}>
-                <Form.Select
-                  value={statusFilter}
-                  onChange={e => handleStatusFilter(e.target.value)}
-                >
-                  <option value="All">All Status</option>
-                  <option value="Active">Active</option>
-                  <option value="Completed">Completed</option>
-                  <option value="Pending">Pending</option>
-                </Form.Select>
-              </Col>
-              <Col md={3} style={{ paddingTop: "10px" }}>
-                <SortDropdown
-                  handlePick={handlePick}
-                  sortedValue={sortedValue}
-                />
-              </Col>
-              <Col md={3} className="d-flex justify-content-end" style={{ paddingTop: "10px" }}>
-                <Button variant="primary" onClick={() => setShow(true)}>
-                  Add new Project
-                </Button>
-              </Col>
-            </Row>
-          </Container>
-          {/* Project table */}
-          <Container style={{ paddingTop: "20px" }}>
-            <Row
-              className="table-scroll-container"
-              style={{
-                maxHeight: "300px",
-                overflowY: "scroll",
-              }}
-            >
-              <Table striped bordered hover responsive>
-                <thead>
-                  <tr>
-                    {/* <th>#</th> */}
-                    <th>Name</th>
-                    <th>Employees</th>
-                    <th>Start Date</th>
-                    <th>End Date</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredProjects.map((element, idx) => (
-                    <DisplayProject
-                      key={element._id}
-                      ele={element}
-                      index={idx}
-                      onProjectUpdate={onProjectUpdate}
-                      onProjectDelete={onProjectDelete}
-                      onViewProject={onViewProject}
-                    />
-                  ))}
-                </tbody>
-              </Table>
-            </Row>
+            <div style={{
+              background: 'white',
+              borderRadius: '12px',
+              padding: '20px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              border: '1px solid #e5e7eb'
+            }}>
+              {/* Filter/search/sort controls and Add button */}
+              <Row className="align-items-center" style={{ marginBottom: '20px' }}>
+                <Col md={3} style={{ marginBottom: '10px' }}>
+                  <Search_form
+                    searchValue={searchValue}
+                    setSearchValue={searchForValue}
+                    inputWidth="100%"
+                  />
+                </Col>
+                <Col md={3} style={{ marginBottom: '10px' }}>
+                  <Form.Select
+                    value={statusFilter}
+                    onChange={e => handleStatusFilter(e.target.value)}
+                    style={{
+                      borderRadius: '8px',
+                      border: '1px solid #d1d5db',
+                      padding: '8px 12px'
+                    }}
+                  >
+                    <option value="All">All Status</option>
+                    <option value="Active">Active</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Pending">Pending</option>
+                  </Form.Select>
+                </Col>
+                <Col md={3} style={{ marginBottom: '10px' }}>
+                  <SortDropdown
+                    handlePick={handlePick}
+                    sortedValue={sortedValue}
+                  />
+                </Col>
+                <Col md={3} className="d-flex justify-content-end" style={{ marginBottom: '10px' }}>
+                  <Button 
+                    onClick={() => setShow(true)}
+                    style={{
+                      background: '#4f46e5',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '8px 16px',
+                      fontWeight: '500'
+                    }}
+                  >
+                    + Add New Project
+                  </Button>
+                </Col>
+              </Row>
+
+              {/* Project table */}
+              <div style={{
+                maxHeight: "400px",
+                overflowY: "auto",
+                borderRadius: '8px',
+                border: '1px solid #e5e7eb'
+              }}>
+                <Table striped bordered hover responsive className="mb-0">
+                  <thead style={{ background: '#f8f9fa', position: 'sticky', top: 0, zIndex: 1 }}>
+                    <tr>
+                      <th style={{ borderBottom: '2px solid #dee2e6', padding: '12px' }}>Name</th>
+                      <th style={{ borderBottom: '2px solid #dee2e6', padding: '12px' }}>Employees</th>
+                      <th style={{ borderBottom: '2px solid #dee2e6', padding: '12px' }}>Start Date</th>
+                      <th style={{ borderBottom: '2px solid #dee2e6', padding: '12px' }}>End Date</th>
+                      <th style={{ borderBottom: '2px solid #dee2e6', padding: '12px' }}>Status</th>
+                      <th style={{ borderBottom: '2px solid #dee2e6', padding: '12px' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredProjects.map((element, idx) => (
+                      <DisplayProject
+                        key={element._id}
+                        ele={element}
+                        index={idx}
+                        onProjectUpdate={onProjectUpdate}
+                        onProjectDelete={onProjectDelete}
+                        onViewProject={onViewProject}
+                      />
+                    ))}
+                  </tbody>
+                </Table>
+              </div>
+            </div>
           </Container>
         </Col>
       </Row>

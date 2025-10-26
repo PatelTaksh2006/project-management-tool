@@ -7,14 +7,12 @@ const router=express.Router();
 
 
 router.post('/add',async (req,res)=>{
-    console.log(req.body);
     const newProject=new project(req.body);
     await newProject.save();
     const manager=await User.findById(req.body.managerId);
     
     manager.project.push(newProject._id);
     await manager.save();
-    console.log(manager);
     for (let index = 0; index < req.body.team.length; index++) {
         const element = req.body.team[index];
         const emp=await User.findById(element);
@@ -25,20 +23,16 @@ router.post('/add',async (req,res)=>{
 })
 
 router.get('/getAll',async (req,res)=>{
-    console.log(req.query);
     const { managerId } = req.query;
     let projects;
     if(managerId && mongoose.Types.ObjectId.isValid(managerId)){
-        console.log("here");
     projects=await project.find({managerId:managerId}).populate('managerId').populate('team').populate('tasks');
-        console.log(projects);
     }
 
     res.send({projects});
 });
 
 router.put('/update',async (req,res)=>{
-    console.log(req.body);
     const tasks=await Task.find({projectId:req.body._id});
     for (let index = 0; index < tasks.length; index++) {
         if(!req.body.team.includes(tasks[index].assignedTo.toString())){
@@ -47,19 +41,16 @@ router.put('/update',async (req,res)=>{
             if (user) {
                 user.tasks = user.tasks.filter(taskId => taskId.toString() !== tasks[index]._id.toString());
                 await user.save();
-                console.log(`Removed task ${tasks[index]._id} from user ${user._id}`);
             }
 
             await tasks[index].deleteOne();
         }
     }
     const updatedProject=await project.findByIdAndUpdate(req.body._id,req.body,{new:true});
-    console.log(updatedProject);
     res.send({message: 'Project updated'});
 });
 
 router.delete('/delete',async (req,res)=>{
-    console.log(req.body);
     const proj=await project.findById(req.body._id);
     const manager=await User.findById(proj.managerId);
     manager.project=manager.project.filter(projId=>projId.toString()!==req.body._id);
@@ -76,7 +67,6 @@ router.delete('/delete',async (req,res)=>{
             if (user) {
                 user.tasks = user.tasks.filter(taskId => taskId.toString() !== tasks[index]._id.toString());
                 await user.save();
-                console.log(`Removed task ${tasks[index]._id} from user ${user._id}`);
             }
             await tasks[index].deleteOne();
             

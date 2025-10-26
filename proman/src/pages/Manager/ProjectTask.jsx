@@ -103,156 +103,198 @@ export default function ProjectTask() {
           <Sidebar user={"manager"} value={"project"} />
         </Col>
         <Col md={8}>
-          <Container className="fluid" style={{ paddingTop: 60, margin: 20 }}>
-            <Row>
-              <Col xs={12} md={6}>
-                <h3 className="mb-0">Project Details</h3>
-                <div className="text-muted small">
-                  View and manage all information and tasks for this project
-                </div>
-              </Col>
-              <Col sm={{ span: 3, offset: 3 }}></Col>
-            </Row>
+          <div style={{
+            background: '#4f46e5',
+            color: 'white',
+            padding: '30px',
+            marginBottom: '30px'
+          }}>
+            <h2 style={{ margin: 0, fontSize: '24px', fontWeight: '600' }}>
+              📋 Project Details
+            </h2>
+            <p style={{ margin: '8px 0 0 0', opacity: 0.9, fontSize: '14px' }}>
+              View and manage all information and tasks for this project
+            </p>
+          </div>
+          <Container style={{ marginBottom: '20px' }}>
+            <div style={{
+              background: 'white',
+              borderRadius: '12px',
+              padding: '20px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              border: '1px solid #e5e7eb',
+              marginBottom: '20px'
+            }}>
+              <DisplayProjectInformation project={project} />
+            </div>
           </Container>
+          
           <Container>
-            <Row>
-              <Col>
-                <DisplayProjectInformation project={project} />
-              </Col>
-            </Row>
-          </Container>
-          <Container style={{ paddingTop: "20px" }}>
-            <Row>
-              <h4>Task Summary</h4>
-            </Row>
-            <Row
-              className="table-scroll-container"
-              style={{
-                maxHeight: "300px",
-                overflowY: "scroll",
-              }}
-            >
-              <Table striped bordered hover responsive>
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Task Name</th>
-                    <th>Assigned To</th>
-                    <th>Status</th>
-                    <th>Priority</th>
-                    <th>Due Date</th>
-                    <th>Files</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tasks.length === 0 ? (
+            <div style={{
+              background: 'white',
+              borderRadius: '12px',
+              padding: '20px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              border: '1px solid #e5e7eb'
+            }}>
+              <h4 style={{ 
+                margin: '0 0 20px 0', 
+                color: '#374151', 
+                fontSize: '18px', 
+                fontWeight: '600' 
+              }}>
+                📝 Task Summary
+              </h4>
+              
+              <div style={{
+                maxHeight: "400px",
+                overflowY: "auto",
+                borderRadius: '8px',
+                border: '1px solid #e5e7eb',
+                marginBottom: '20px'
+              }}>
+                <Table striped bordered hover responsive className="mb-0">
+                  <thead style={{ background: '#f8f9fa', position: 'sticky', top: 0, zIndex: 1 }}>
                     <tr>
-                      <td colSpan={8} className="text-center">
-                        No tasks found.
-                      </td>
+                      <th style={{ borderBottom: '2px solid #dee2e6', padding: '12px' }}>#</th>
+                      <th style={{ borderBottom: '2px solid #dee2e6', padding: '12px' }}>Task Name</th>
+                      <th style={{ borderBottom: '2px solid #dee2e6', padding: '12px' }}>Assigned To</th>
+                      <th style={{ borderBottom: '2px solid #dee2e6', padding: '12px' }}>Status</th>
+                      <th style={{ borderBottom: '2px solid #dee2e6', padding: '12px' }}>Priority</th>
+                      <th style={{ borderBottom: '2px solid #dee2e6', padding: '12px' }}>Due Date</th>
+                      <th style={{ borderBottom: '2px solid #dee2e6', padding: '12px' }}>Files</th>
+                      <th style={{ borderBottom: '2px solid #dee2e6', padding: '12px' }}>Actions</th>
                     </tr>
-                  ) : (
-                    tasks.map((task, idx) => (
-                      <tr key={task._id}>
-                        <td>{idx + 1}</td>
-                        <td>{task.name}</td>
-                        <td>{task.assignedTo?.Name}</td>
-                        <td>
-                          <Badge
-                            bg={
-                              task.status === "Completed"
-                                ? "success"
-                                : task.status === "In Progress"
-                                ? "warning"
-                                : "secondary"
-                            }
-                          >
-                            {task.status}
-                          </Badge>
-                        </td>
-                        <td>
-                          <Badge
-                            bg={
-                              task.priority === "High"
-                                ? "danger"
-                                : task.priority === "Medium"
-                                ? "warning"
-                                : "secondary"
-                            }
-                          >
-                            {task.priority}
-                          </Badge>
-                        </td>
-                        {(() => {
-                          const isOverdue = (task && task._doc && task._doc.isOverdue) || task.isOverdue;
-                          return (
-                            <td style={{ whiteSpace: "nowrap", color: isOverdue ? '#b00020' : undefined }}>
-                              {task.dueDate} {isOverdue && <Badge bg="danger" style={{ marginLeft: 8 }}>Overdue</Badge>}
-                            </td>
-                          );
-                        })()}
-                        <td>
-                          {task.files && task.files.length > 0 ? (
-                            task.files.map((file, fidx) => (
-                              <a
-                                key={fidx}
-                                href={file.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{
-                                  display: "inline-block",
-                                  margin: "2px 6px 2px 0",
-                                  padding: "4px 10px 4px 8px",
-                                  borderRadius: "16px",
-                                  background: "#f1f3f4",
-                                  color: "#333",
-                                  textDecoration: "none",
-                                  fontSize: "0.95em",
-                                  border: "1px solid #d1d5da",
-                                  boxShadow: "0 1px 2px rgba(60,60,60,0.05)",
-                                  verticalAlign: "middle"
-                                }}
-                              >
-                                <span role="img" aria-label="file" style={{ marginRight: 6, color: "#6c63ff" }}>@</span>
-                                {file.name}
-                              </a>
-                            ))
-                          ) : (
-                            <span>No files</span>
-                          )}
-                        </td>
-                        <td>
-                          <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => onUpdateTask(task)}
-                              style={{ minWidth: "70px" }}
-                            >
-                              Update
-                            </Button>
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              onClick={() => handleDeleteTask(task._id)}
-                              style={{ minWidth: "70px" }}
-                            >
-                              Delete
-                            </Button>
-                          </div>
+                  </thead>
+                  <tbody>
+                    {tasks.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="text-center" style={{ padding: '20px' }}>
+                          No tasks found.
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </Table>
-            </Row>
-            <Row>
-              <Button variant="success" className="mb-2" onClick={addNewTask} disabled={project.Status!=="Active"}>
-                Add New Task
+                    ) : (
+                      tasks.map((task, idx) => (
+                        <tr key={task._id}>
+                          <td style={{ padding: '12px' }}>{idx + 1}</td>
+                          <td style={{ padding: '12px' }}>{task.name}</td>
+                          <td style={{ padding: '12px' }}>{task.assignedTo?.Name}</td>
+                          <td style={{ padding: '12px' }}>
+                            <Badge
+                              bg={
+                                task.status === "Completed"
+                                  ? "success"
+                                  : task.status === "In Progress"
+                                  ? "warning"
+                                  : "secondary"
+                              }
+                            >
+                              {task.status}
+                            </Badge>
+                          </td>
+                          <td style={{ padding: '12px' }}>
+                            <Badge
+                              bg={
+                                task.priority === "High"
+                                  ? "danger"
+                                  : task.priority === "Medium"
+                                  ? "warning"
+                                  : "secondary"
+                              }
+                            >
+                              {task.priority}
+                            </Badge>
+                          </td>
+                          {(() => {
+                            const isOverdue = (task && task._doc && task._doc.isOverdue) || task.isOverdue;
+                            return (
+                              <td style={{ 
+                                padding: '12px', 
+                                whiteSpace: "nowrap", 
+                                color: isOverdue ? '#b00020' : undefined 
+                              }}>
+                                {task.dueDate} {isOverdue && <Badge bg="danger" style={{ marginLeft: 8 }}>Overdue</Badge>}
+                              </td>
+                            );
+                          })()}
+                          <td style={{ padding: '12px' }}>
+                            {task.files && task.files.length > 0 ? (
+                              task.files.map((file, fidx) => (
+                                <a
+                                  key={fidx}
+                                  href={file.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    display: "inline-block",
+                                    margin: "2px 6px 2px 0",
+                                    padding: "4px 10px 4px 8px",
+                                    borderRadius: "16px",
+                                    background: "#f1f3f4",
+                                    color: "#333",
+                                    textDecoration: "none",
+                                    fontSize: "0.95em",
+                                    border: "1px solid #d1d5da",
+                                    boxShadow: "0 1px 2px rgba(60,60,60,0.05)",
+                                    verticalAlign: "middle"
+                                  }}
+                                >
+                                  <span role="img" aria-label="file" style={{ marginRight: 6, color: "#6c63ff" }}>@</span>
+                                  {file.name}
+                                </a>
+                              ))
+                            ) : (
+                              <span>No files</span>
+                            )}
+                          </td>
+                          <td style={{ padding: '12px' }}>
+                            <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => onUpdateTask(task)}
+                                style={{ 
+                                  minWidth: "70px",
+                                  borderRadius: '6px'
+                                }}
+                              >
+                                Update
+                              </Button>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => handleDeleteTask(task._id)}
+                                style={{ 
+                                  minWidth: "70px",
+                                  borderRadius: '6px'
+                                }}
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </Table>
+              </div>
+              
+              <Button 
+                onClick={addNewTask} 
+                disabled={project.Status!=="Active"}
+                style={{
+                  background: project.Status === "Active" ? '#10b981' : '#9ca3af',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '10px 20px',
+                  fontWeight: '500',
+                  color: 'white'
+                }}
+              >
+                + Add New Task
               </Button>
-            </Row>
+            </div>
           </Container>
         </Col>
       </Row>

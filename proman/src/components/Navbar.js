@@ -3,26 +3,68 @@ import { Navbar, Nav, Container, Button, Badge } from "react-bootstrap";
 
 export default function TopNavbar({ name }) {
   return (
-    <Navbar bg="primary" variant="dark" expand="lg" sticky="top" className="shadow-sm">
-      <Container fluid>
-        <Navbar.Brand className="fw-bold" href="/">PM Tool</Navbar.Brand>
+    <div style={{
+      background: '#4f46e5',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+      position: 'sticky',
+      top: 0,
+      zIndex: 1000,
+      borderBottom: '1px solid #3730a3'
+    }}>
+      <Container fluid style={{ padding: '12px 24px' }}>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          width: '100%'
+        }}>
+          <div style={{
+            color: 'white',
+            fontSize: '20px',
+            fontWeight: '700',
+            textDecoration: 'none'
+          }}>
+            📋 PM Tool
+          </div>
 
-        <Navbar.Toggle aria-controls="topNavbar" />
-        <Navbar.Collapse id="topNavbar">
-          {/* Right-aligned block */}
-          <Nav className="ms-auto align-items-center">
-            <Navbar.Text className="text-white-50 me-3 d-none d-sm-inline">
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '16px'
+          }}>
+            <span style={{
+              color: 'rgba(255,255,255,0.8)',
+              fontSize: '14px',
+              display: window.innerWidth > 576 ? 'inline' : 'none'
+            }}>
               Welcome, {name}
-            </Navbar.Text>
+            </span>
 
-            {name}
-
-            <Button variant="outline-light" size="sm" href="/" className="me-0">
+            <Button 
+              href="/" 
+              style={{
+                background: 'rgba(255,255,255,0.1)',
+                border: '1px solid rgba(255,255,255,0.3)',
+                borderRadius: '6px',
+                color: 'white',
+                padding: '6px 12px',
+                fontSize: '14px',
+                fontWeight: '500',
+                textDecoration: 'none',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = 'rgba(255,255,255,0.2)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'rgba(255,255,255,0.1)';
+              }}
+            >
               Logout
             </Button>
-          </Nav>
-        </Navbar.Collapse>
+          </div>
+        </div>
       </Container>
-    </Navbar>
+    </div>
   );
 }

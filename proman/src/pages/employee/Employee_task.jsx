@@ -135,6 +135,7 @@ export default function Employee_task() {
         updated = { ...task, status: "In Progress" };
       }
       if (updated) {
+        console.log('Marking task as completed:', updated);
         UpdateTask(updated)
           .then(() => getEmployeeTasks(employeeId).then(fetched => setTasks(Array.isArray(fetched) ? fetched : [])))
           .catch((e) => console.error('UpdateTask failed:', e));
@@ -171,7 +172,7 @@ export default function Employee_task() {
       const storedName = `${originalBaseSafe}_${taskNameSafe}_${projectNameSafe}_${timestamp}${ext}`;
       const url = `/upload_Documents/${storedName}`;
 
-    
+
 
       // Best-effort: try to upload the file to a generic upload endpoint so server can persist it
       (async () => {
@@ -204,254 +205,558 @@ export default function Employee_task() {
     }
     setShowFileInput(false);
     setCurrentTaskId(null);
-};
+  };
 
 
   return (
-    <div>
+    <div style={{ 
+      minHeight: '100vh', 
+      backgroundColor: '#f8f9fa',
+      fontFamily: "'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+    }}>
       <Navbar name="employee" />
-      <Row>
-        <Col md={3}>
+      <Row style={{ margin: 0 }}>
+        <Col md={3} style={{ padding: 0 }}>
           <Sidebar user={"employee"} value="task" id_name={employeeName} />
         </Col>
-        <Col md={8}>
-          <Container className="fluid" style={{ paddingTop: 60, margin: 20 }}>
-            <Row>
-              <Col xs={12} md={6}>
-                <h3 className="mb-0">My Tasks</h3>
-                <div className="text-muted small">
-                  All tasks assigned to you, filter and track your work.
+        <Col md={9} style={{ padding: '20px 30px' }}>
+          {/* Header Section */}
+          <div style={{
+            background: '#4f46e5',
+            borderRadius: '12px',
+            padding: '24px',
+            marginBottom: '24px',
+            boxShadow: '0 4px 12px rgba(79, 70, 229, 0.2)',
+            color: 'white'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <h2 style={{ 
+                  margin: 0, 
+                  fontSize: '2rem', 
+                  fontWeight: '600',
+                  marginBottom: '4px'
+                }}>
+                  My Tasks
+                </h2>
+                <p style={{ 
+                  margin: 0, 
+                  fontSize: '1rem', 
+                  opacity: 0.9
+                }}>
+                  Track and manage your assigned tasks
+                </p>
+              </div>
+              <div style={{
+                background: 'rgba(255,255,255,0.1)',
+                borderRadius: '12px',
+                padding: '16px',
+                border: '1px solid rgba(255,255,255,0.2)'
+              }}>
+                <div style={{ fontSize: '2rem', textAlign: 'center' }}>📋</div>
+              </div>
+            </div>
+          </div>
+          {/* Task Summary Cards */}
+          <Row style={{ marginBottom: '32px' }}>
+            <Col sm={4} style={{ marginBottom: '16px' }}>
+              <div style={{
+                background: '#10b981',
+                borderRadius: '12px',
+                padding: '20px',
+                color: 'white',
+                textAlign: 'center',
+                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)',
+                transition: 'all 0.2s ease'
+              }}>
+                <div style={{ fontSize: '2rem', marginBottom: '8px' }}>✓</div>
+                <div style={{ fontSize: '1.8rem', fontWeight: '600', marginBottom: '4px' }}>{completedCount}</div>
+                <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>Completed</div>
+              </div>
+            </Col>
+            <Col sm={4} style={{ marginBottom: '16px' }}>
+              <div style={{
+                background: '#f59e0b',
+                borderRadius: '12px',
+                padding: '20px',
+                color: 'white',
+                textAlign: 'center',
+                boxShadow: '0 4px 12px rgba(245, 158, 11, 0.2)',
+                transition: 'all 0.2s ease'
+              }}>
+                <div style={{ fontSize: '2rem', marginBottom: '8px' }}>⏳</div>
+                <div style={{ fontSize: '1.8rem', fontWeight: '600', marginBottom: '4px' }}>{inProgressCount}</div>
+                <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>In Progress</div>
+              </div>
+            </Col>
+            <Col sm={4} style={{ marginBottom: '16px' }}>
+              <div style={{
+                background: '#3b82f6',
+                borderRadius: '12px',
+                padding: '20px',
+                color: 'white',
+                textAlign: 'center',
+                boxShadow: '0 4px 12px rgba(59, 130, 246, 0.2)',
+                transition: 'all 0.2s ease'
+              }}>
+                <div style={{ fontSize: '2rem', marginBottom: '8px' }}>📝</div>
+                <div style={{ fontSize: '1.8rem', fontWeight: '600', marginBottom: '4px' }}>{todoCount}</div>
+                <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>To Do</div>
+              </div>
+            </Col>
+          </Row>
+          {/* Filter Controls */}
+          <div style={{
+            background: 'white',
+            borderRadius: '12px',
+            padding: '20px',
+            marginBottom: '20px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            border: '1px solid #e5e7eb'
+          }}>
+            <h5 style={{ 
+              marginBottom: '16px', 
+              color: '#374151', 
+              fontWeight: '600',
+              fontSize: '1.1rem'
+            }}>
+              Filter & Search
+            </h5>
+            <Row className="align-items-center">
+              <Col md={3} style={{ marginBottom: "16px" }}>
+                <div style={{ position: 'relative' }}>
+                  <Search_form
+                    searchValue={searchValue}
+                    setSearchValue={setSearchValue}
+                    inputWidth="100%"
+                  />
                 </div>
               </Col>
-            </Row>
-          </Container>
-          {/* Task summary bar */}
-          <Container>
-            <Row className="mb-2">
-              <Col sm={4}>
-                <div className="p-2 bg-success text-white rounded text-center">
-                  Completed: {completedCount}
-                </div>
-              </Col>
-              <Col sm={4}>
-                <div className="p-2 bg-warning text-dark rounded text-center">
-                  In Progress: {inProgressCount}
-                </div>
-              </Col>
-              <Col sm={4}>
-                <div className="p-2 bg-secondary text-white rounded text-center">
-                  To Do: {todoCount}
-                </div>
-              </Col>
-            </Row>
-          </Container>
-          {/* Filter/search controls */}
-          <Container>
-            <Row className="align-items-center mb-1">
-              <Col md={3} style={{ paddingTop: "10px" }}>
-                <Search_form
-                  searchValue={searchValue}
-                  setSearchValue={setSearchValue}
-                  inputWidth="180px"
-                />
-              </Col>
-              <Col md={2} style={{ paddingTop: "10px" }}>
+              <Col md={2} style={{ marginBottom: "16px" }}>
                 <Form.Select
                   value={priorityFilter}
                   onChange={e => setPriorityFilter(e.target.value)}
+                  style={{
+                    borderRadius: '8px',
+                    border: '1px solid #d1d5db',
+                    padding: '8px 12px',
+                    fontSize: '14px'
+                  }}
                 >
-                  <option value="All">All Priorities</option>
-                  <option value="High">High</option>
-                  <option value="Medium">Medium</option>
-                  <option value="Low">Low</option>
+                  <option value="All">🎯 All Priorities</option>
+                  <option value="High">🔴 High</option>
+                  <option value="Medium">🟡 Medium</option>
+                  <option value="Low">🟢 Low</option>
                 </Form.Select>
               </Col>
-              <Col md={2} style={{ paddingTop: "10px" }}>
+              <Col md={2} style={{ marginBottom: "16px" }}>
                 <Form.Select
                   value={projectFilter}
                   onChange={e => setProjectFilter(e.target.value)}
+                  style={{
+                    borderRadius: '12px',
+                    border: '2px solid #e2e8f0',
+                    padding: '12px 16px',
+                    fontSize: '14px',
+                    transition: 'all 0.2s ease',
+                    backgroundColor: '#fff'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = '#667eea'}
+                  onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
                 >
-                  <option value="All">All Projects</option>
+                  <option value="All">📁 All Projects</option>
                   {projectOptions.map((proj, idx) => (
                     <option key={idx} value={proj}>{proj}</option>
                   ))}
                 </Form.Select>
               </Col>
-              <Col md={2} style={{ paddingTop: "10px" }}>
+              <Col md={2} style={{ marginBottom: "16px" }}>
                 <Form.Select
                   value={statusFilter}
                   onChange={e => setStatusFilter(e.target.value)}
+                  style={{
+                    borderRadius: '12px',
+                    border: '2px solid #e2e8f0',
+                    padding: '12px 16px',
+                    fontSize: '14px',
+                    transition: 'all 0.2s ease',
+                    backgroundColor: '#fff'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = '#667eea'}
+                  onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
                 >
-                  <option value="All">All Status</option>
-                  <option value="To Do">To Do</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Completed">Completed</option>
+                  <option value="All">📊 All Status</option>
+                  <option value="To Do">📝 To Do</option>
+                  <option value="In Progress">⏳ In Progress</option>
+                  <option value="Completed">✅ Completed</option>
                 </Form.Select>
               </Col>
-              <Col md={3} style={{ paddingTop: "10px" }}>
+              <Col md={3} style={{ marginBottom: "16px" }}>
                 <Form.Select
                   value={sortBy}
                   onChange={e => setSortBy(e.target.value)}
+                  style={{
+                    borderRadius: '12px',
+                    border: '2px solid #e2e8f0',
+                    padding: '12px 16px',
+                    fontSize: '14px',
+                    transition: 'all 0.2s ease',
+                    backgroundColor: '#fff'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = '#667eea'}
+                  onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
                 >
-                  <option value="None">Sort By</option>
-                  <option value="NameAsc">Name (A-Z)</option>
-                  <option value="NameDesc">Name (Z-A)</option>
-                  <option value="DueAsc">Due Date (Earliest)</option>
-                  <option value="DueDesc">Due Date (Latest)</option>
+                  <option value="None">🔄 Sort By</option>
+                  <option value="NameAsc">📝 Name (A-Z)</option>
+                  <option value="NameDesc">📝 Name (Z-A)</option>
+                  <option value="DueAsc">📅 Due Date (Earliest)</option>
+                  <option value="DueDesc">📅 Due Date (Latest)</option>
                 </Form.Select>
               </Col>
             </Row>
-          </Container>
-          {/* Task table */}
-          <Container style={{ paddingTop: "10px" }}>
-            <Row
-              className="table-scroll-container"
-              style={{
-                maxHeight: "300px",
-                overflowY: "scroll",
-              }}
-            >
-              <div style={{ width: "100%", overflowX: "auto" }}>
-                <Table striped bordered hover responsive style={{ minWidth: 900 }}>
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      <th>Task Name</th>
-                      <th>Project</th>
-                      <th>Status</th>
-                      <th>Priority</th>
-                      <th>Due Date</th>
-                      <th>Files</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
+          </div>
+          {/* Tasks Table */}
+          <div style={{
+            background: 'white',
+            borderRadius: '12px',
+            overflow: 'hidden',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            border: '1px solid #e5e7eb'
+          }}>
+            <div style={{
+              background: '#4f46e5',
+              padding: '16px 20px',
+              color: 'white'
+            }}>
+              <h5 style={{ margin: 0, fontWeight: '600' }}>
+                Tasks ({filteredTasks.length})
+              </h5>
+            </div>
+            <div style={{
+              maxHeight: "500px",
+              overflowY: "auto",
+              overflowX: "auto"
+            }}>
+              <Table hover responsive style={{ 
+                minWidth: 1000, 
+                margin: 0,
+                fontSize: '14px'
+              }}>
+                <thead style={{
+                  background: '#f8f9fa',
+                  position: 'sticky',
+                  top: 0,
+                  zIndex: 10
+                }}>
+                  <tr>
+                    <th style={{ 
+                      padding: '16px 12px', 
+                      fontWeight: '600', 
+                      color: '#4a5568',
+                      borderBottom: '2px solid #e2e8f0',
+                      fontSize: '13px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>#</th>
+                    <th style={{ 
+                      padding: '16px 12px', 
+                      fontWeight: '600', 
+                      color: '#4a5568',
+                      borderBottom: '2px solid #e2e8f0',
+                      fontSize: '13px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>Task Name</th>
+                    <th style={{ 
+                      padding: '16px 12px', 
+                      fontWeight: '600', 
+                      color: '#4a5568',
+                      borderBottom: '2px solid #e2e8f0',
+                      fontSize: '13px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>Project</th>
+                    <th style={{ 
+                      padding: '16px 12px', 
+                      fontWeight: '600', 
+                      color: '#4a5568',
+                      borderBottom: '2px solid #e2e8f0',
+                      fontSize: '13px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>Status</th>
+                    <th style={{ 
+                      padding: '16px 12px', 
+                      fontWeight: '600', 
+                      color: '#4a5568',
+                      borderBottom: '2px solid #e2e8f0',
+                      fontSize: '13px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>Priority</th>
+                    <th style={{ 
+                      padding: '16px 12px', 
+                      fontWeight: '600', 
+                      color: '#4a5568',
+                      borderBottom: '2px solid #e2e8f0',
+                      fontSize: '13px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>Due Date</th>
+                    <th style={{ 
+                      padding: '16px 12px', 
+                      fontWeight: '600', 
+                      color: '#4a5568',
+                      borderBottom: '2px solid #e2e8f0',
+                      fontSize: '13px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>Files</th>
+                    <th style={{ 
+                      padding: '16px 12px', 
+                      fontWeight: '600', 
+                      color: '#4a5568',
+                      borderBottom: '2px solid #e2e8f0',
+                      fontSize: '13px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      textAlign: 'center'
+                    }}>Actions</th>
+                  </tr>
+                </thead>
                   <tbody>
                     {filteredTasks.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="text-center">
-                          No tasks found.
+                        <td colSpan={8} style={{ 
+                          textAlign: 'center', 
+                          padding: '48px 24px',
+                          color: '#718096',
+                          fontSize: '16px'
+                        }}>
+                          <div style={{ fontSize: '48px', marginBottom: '16px' }}>📋</div>
+                          <div style={{ fontWeight: '600', marginBottom: '8px' }}>No tasks found</div>
+                          <div style={{ fontSize: '14px' }}>Try adjusting your filters or check back later</div>
                         </td>
                       </tr>
                     ) : (
                       filteredTasks.map((task, idx) => {
                         const isOverdue = (task && task._doc && task._doc.isOverdue) || task.isOverdue;
                         return (
-                          <tr key={task._id} style={isOverdue ? { backgroundColor: '#fff1f1' } : undefined}>
-                            <td>{idx + 1}</td>
-                            <td>{task.name}</td>
-                            <td>{task.projectId.Name}</td>
-                            <td>
+                          <tr key={task._id} style={{ 
+                            backgroundColor: isOverdue ? '#fef2f2' : 'white',
+                            borderLeft: isOverdue ? '4px solid #ef4444' : '4px solid transparent',
+                            transition: 'all 0.2s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isOverdue) e.target.style.backgroundColor = '#f7fafc';
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isOverdue) e.target.style.backgroundColor = 'white';
+                          }}>
+                            <td style={{ 
+                              padding: '16px 12px', 
+                              fontWeight: '600',
+                              color: '#4a5568',
+                              borderBottom: '1px solid #f1f5f9'
+                            }}>{idx + 1}</td>
+                            <td style={{ 
+                              padding: '16px 12px',
+                              fontWeight: '600',
+                              color: '#2d3748',
+                              borderBottom: '1px solid #f1f5f9'
+                            }}>{task.name}</td>
+                            <td style={{ 
+                              padding: '16px 12px',
+                              color: '#4a5568',
+                              borderBottom: '1px solid #f1f5f9'
+                            }}>{task.projectId.Name}</td>
+                            <td style={{ 
+                              padding: '16px 12px',
+                              borderBottom: '1px solid #f1f5f9'
+                            }}>
                               <Badge
                                 bg={
                                   task.status === "Completed"
                                     ? "success"
                                     : task.status === "In Progress"
                                       ? "warning"
-                                      : "secondary"
+                                      : "primary"
                                 }
+                                style={{
+                                  fontSize: '11px',
+                                  fontWeight: '500'
+                                }}
                               >
                                 {task.status}
                               </Badge>
                             </td>
-                            <td>
+                            <td style={{ 
+                              padding: '16px 12px',
+                              borderBottom: '1px solid #f1f5f9'
+                            }}>
                               <Badge
                                 bg={
                                   task.priority === "High"
                                     ? "danger"
                                     : task.priority === "Medium"
                                       ? "warning"
-                                      : "secondary"
+                                      : "info"
                                 }
+                                style={{
+                                  fontSize: '11px',
+                                  fontWeight: '500'
+                                }}
                               >
                                 {task.priority}
                               </Badge>
                             </td>
-                            <td style={{ whiteSpace: "nowrap", color: isOverdue ? '#b00020' : undefined }}>
-                              {task.dueDate} {isOverdue && <Badge bg="danger" style={{ marginLeft: 8 }}>Overdue</Badge>}
+                            <td style={{ 
+                              whiteSpace: "nowrap", 
+                              color: isOverdue ? '#e53e3e' : '#4a5568',
+                              padding: '16px 12px',
+                              borderBottom: '1px solid #f1f5f9',
+                              fontWeight: '500'
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span>{task.dueDate}</span>
+                                {isOverdue && (
+                                  <Badge bg="danger" style={{ marginLeft: '8px', fontSize: '10px' }}>
+                                    Overdue
+                                  </Badge>
+                                )}
+                              </div>
                             </td>
-                            <td>
+                            <td style={{ 
+                              padding: '16px 12px',
+                              borderBottom: '1px solid #f1f5f9'
+                            }}>
                               {task.files && task.files.length > 0 ? (
-                                task.files.map((file, fidx) => (
-                                  <span
-                                    key={fidx}
-                                    style={{
-                                      display: "inline-flex",
-                                      alignItems: "center",
-                                      margin: "2px 6px 2px 0",
-                                      paddingRight: 6
-                                    }}
-                                  >
-                                    <a
-                                      href={file.url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                  {task.files.map((file, fidx) => (
+                                    <div
+                                      key={fidx}
                                       style={{
-                                        display: "inline-block",
-                                        padding: "4px 10px 4px 8px",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        background: "#4f46e5",
                                         borderRadius: "16px",
-                                        background: "#f1f3f4",
-                                        color: "#333",
-                                        textDecoration: "none",
-                                        fontSize: "0.95em",
-                                        border: "1px solid #d1d5da",
-                                        boxShadow: "0 1px 2px rgba(60,60,60,0.05)",
-                                        verticalAlign: "middle"
+                                        padding: "6px 12px",
+                                        boxShadow: "0 2px 4px rgba(79, 70, 229, 0.3)"
                                       }}
                                     >
-                                      <span role="img" aria-label="file" style={{ marginRight: 6, color: "#6c63ff" }}>📎</span>
-                                      {file.name}
-                                    </a>
-                                    <Button
-                                      variant="danger"
-                                      size="sm"
-                                      title="Delete file"
-                                      onClick={async () => {
-                                        if (!window.confirm(`Delete file "${file.name}"?`)) return;
-                                        try {
-                                          // Build updated task without this file (optimistic UI)
-                                          const updated = { ...task, files: (task.files || []).filter((_, i) => i !== fidx) };
-                                          setTasks(prev => prev.map(t => t._id === task._id ? updated : t));
-                                          // Persist the change
-                                          await UpdateTask({ ...updated, projectId: task.projectId });
-                                          // Refresh tasks from server/store
-                                          const fetched = await getEmployeeTasks(employeeId);
-                                          setTasks(Array.isArray(fetched) ? fetched : []);
-                                        } catch (e) {
-                                          console.error('Delete file failed:', e);
-                                        }
-                                      }}
-                                      style={{ marginLeft: 6 }}
-                                    >
-                                      ✖
-                                    </Button>
-                                  </span>
-                                ))
+                                      <a
+                                        href={file.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{
+                                          color: "white",
+                                          textDecoration: "none",
+                                          fontSize: "12px",
+                                          fontWeight: "500",
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: "4px"
+                                        }}
+                                      >
+                                        <span>📎</span>
+                                        <span>{file.name.length > 15 ? file.name.substring(0, 15) + '...' : file.name}</span>
+                                      </a>
+                                      {task.status === "In Progress" && (
+                                        <Button
+                                          variant="link"
+                                          size="sm"
+                                          title="Delete file"
+                                          onClick={async () => {
+                                            if (!window.confirm(`Delete file "${file.name}"?`)) return;
+                                            try {
+                                              const updated = { ...task, files: (task.files || []).filter((_, i) => i !== fidx) };
+                                              setTasks(prev => prev.map(t => t._id === task._id ? updated : t));
+                                              await UpdateTask({ ...updated, projectId: task.projectId });
+                                              const fetched = await getEmployeeTasks(employeeId);
+                                              setTasks(Array.isArray(fetched) ? fetched : []);
+                                            } catch (e) {
+                                              console.error('Delete file failed:', e);
+                                            }
+                                          }}
+                                          style={{ 
+                                            color: 'white',
+                                            padding: '0 4px',
+                                            minWidth: 'auto',
+                                            marginLeft: '4px'
+                                          }}
+                                        >
+                                          ×
+                                        </Button>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
                               ) : (
-                                <span>No files</span>
+                                <span style={{ color: '#a0aec0', fontSize: '14px', fontStyle: 'italic' }}>
+                                  No files
+                                </span>
                               )}
                             </td>
-                            <td style={{ textAlign: "center" }}>
-
-                              <>
+                            <td style={{ 
+                              textAlign: "center", 
+                              padding: '16px 12px',
+                              borderBottom: '1px solid #f1f5f9'
+                            }}>
+                              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
                                 <Button
-                                  variant="success"
                                   size="sm"
-                                  className="me-2"
                                   onClick={() => handleMarkCompleted(task._id)}
-                                  title="Mark as Completed"
+                                  title={task.status === "Completed" ? "Mark as In Progress" : "Mark as Completed"}
                                   disabled={task.status == "To Do" || task.projectId.Status !== "Active"}
+                                  style={{
+                                    background: task.status === "Completed" 
+                                      ? 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
+                                      : 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    padding: '8px 12px',
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                                    transition: 'all 0.2s ease',
+                                    color: 'white'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.target.style.transform = 'translateY(-2px)';
+                                    e.target.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.target.style.transform = 'translateY(0)';
+                                    e.target.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+                                  }}
                                 >
                                   {task.status === "Completed" ? <ArrowCounterclockwise /> : <Check2Circle />}
                                 </Button>
-                                {(task.status != "Completed" && <Button
-                                  variant="outline-primary"
-                                  size="sm"
-                                  onClick={() => handleFileButtonClick(task._id)}
-                                  title="Add File"
-                                  disabled={task.status != "In Progress" || task.projectId.Status !== "Active"}
-                                >
-                                  <Paperclip />
-                                </Button>)}
+                                {task.status != "Completed" && (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleFileButtonClick(task._id)}
+                                    title="Add File"
+                                    disabled={task.status != "In Progress" || task.projectId.Status !== "Active"}
+                                    style={{
+                                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                      border: 'none',
+                                      borderRadius: '8px',
+                                      padding: '8px 12px',
+                                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                                      transition: 'all 0.2s ease',
+                                      color: 'white'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      e.target.style.transform = 'translateY(-2px)';
+                                      e.target.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.target.style.transform = 'translateY(0)';
+                                      e.target.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+                                    }}
+                                  >
+                                    <Paperclip />
+                                  </Button>
+                                )}
 
                                 {/* Hidden file input for this task */}
                                 {showFileInput && currentTaskId === task._id && (
@@ -465,20 +770,16 @@ export default function Employee_task() {
                                     ref={input => input && input.click()}
                                   />
                                 )}
-                              </>
-
+                              </div>
                             </td>
                           </tr>
                         );
-                      }
-                      
-                    ))
-
-                                      }                    </tbody>
+                      })
+                    )}
+                  </tbody>
                 </Table>
-              </div>
-            </Row>
-          </Container>
+            </div>
+          </div>
         </Col>
       </Row>
     </div>
