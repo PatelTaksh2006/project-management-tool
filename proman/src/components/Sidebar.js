@@ -97,7 +97,25 @@ export default function Sidebar({ user, value, id_name }) {
             📁 Projects
           </Link>
         )}
-
+        {user==="manager" && (
+          <Link
+            to={`${base_path}/employees`}
+            style={linkStyle(isActive("employees"))}
+            onMouseEnter={(e) => {
+              if (!isActive("employees")) {
+                Object.assign(e.target.style, linkHoverStyle);
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isActive("employees")) {
+                e.target.style.background = 'transparent';
+                e.target.style.color = '#374151';
+              }
+            }}
+          >
+            👥 Employees
+          </Link>
+        )}
         {user === "employee" && (
           <Link
             to={`${base_path}/tasks`}
@@ -117,6 +135,7 @@ export default function Sidebar({ user, value, id_name }) {
             ✅ Tasks
           </Link>
         )}
+        
       </nav>
     </div>
   );

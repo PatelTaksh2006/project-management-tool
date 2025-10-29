@@ -1,8 +1,9 @@
 import mongoose from 'mongoose';
 // import Project from ProjectSchema;
 const UserSchema=new mongoose.Schema({
+    EmpId:{type:String,required:true,unique:true},
     Name:{type:String,required:true},
-    Email:{type:String,required:true},
+    Email:{type:String,required:true,unique:true},
     Password:{type:String,required:true},
     isManager:{type:Boolean,required:true},
     role:{type:String,required:true},

@@ -8,6 +8,7 @@ const router = express.Router();
 
 // Add a new task and attach it to the project (and user if assigned)
 router.post('/add', async (req, res) => {
+    console.log("task to add=======================\n"+req.body);
     try {
         const newTask = new Task(req.body);
                 // normalize and update dueDate & priority based on days difference

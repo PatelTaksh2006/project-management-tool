@@ -97,13 +97,13 @@ export default function AddNewTask({ show, onClose, onTaskAdd, employeeList }) {
               {employeeList && employeeList.map((emp, idx) => {
                 // emp can be a string id/name or an object { _id, id, Name, name, role }
                 if (!emp) return null;
-                if (typeof emp === 'string' || typeof emp === 'number') {
-                  const val = String(emp);
-                  return (
-                    <option key={val + idx} value={val}>{val}</option>
-                  );
-                }
-                const id = emp._id || emp.id || emp.Name || emp.name || idx;
+                // if (typeof emp === 'string' || typeof emp === 'number') {
+                //   const val = String(emp);
+                //   return (
+                //     <option key={val + idx} value={val}>{val}</option>
+                //   );
+                // }
+                const id = emp._id;
                 const label = emp.Name || emp.name || String(id);
                 return (
                   <option key={id} value={id}>{label}</option>

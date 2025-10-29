@@ -8,6 +8,7 @@ import { getProjects, update, subscribe } from "../../Data/Projects";
 import { getTasks, Add as AddTask, update as UpdateTask, del as DeleteTask, subscribe as subscribeTasks } from "../../Data/Tasks";
 import AddNewTask from "../../components/AddNewTask";
 import EditTask from "../../components/EditTask";
+import EditProject from "../../components/EditProject";
 import { useUser } from "../../contexts/UserContext";
 
 export default function ProjectTask() {
@@ -20,6 +21,7 @@ export default function ProjectTask() {
   const [showUpdateTask, setUpdateTask] = useState(false);
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
+  const [showEditProject, setShowEditProject] = useState(false);
   // Sync with global project/task changes
   useEffect(() => {
     let mounted = true;
@@ -95,6 +97,18 @@ export default function ProjectTask() {
     DeleteTask(taskId, id).catch((e) => console.error('DeleteTask failed:', e));
   }
 
+  function handleEditProject() {
+    setShowEditProject(true);
+  }
+
+  function handleProjectUpdate(updatedProject) {
+    if (updatedProject) {
+      updatedProject.managerId = managerId; // Ensure managerId is set
+      update(updatedProject);
+    }
+    setShowEditProject(false);
+  }
+
   return (
     <div>
       <Navbar name="manager" />
@@ -125,6 +139,31 @@ export default function ProjectTask() {
               border: '1px solid #e5e7eb',
               marginBottom: '20px'
             }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+                <h4 style={{ 
+                  margin: 0, 
+                  color: '#374151', 
+                  fontSize: '18px', 
+                  fontWeight: '600' 
+                }}>
+                  🏢 Project Information
+                </h4>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleEditProject}
+                  style={{
+                    borderRadius: '8px',
+                    padding: '6px 16px',
+                    fontWeight: '500',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  ✏️ Edit Project
+                </Button>
+              </div>
               <DisplayProjectInformation project={project} />
             </div>
           </Container>
@@ -312,6 +351,14 @@ export default function ProjectTask() {
         onClose={() => setUpdateTask(false)}
         onTaskUpdate={handleTaskUpdate}
         employeeList={Array.isArray(project.team) ? project.team : []}
+      />
+
+      <EditProject
+        project={project}
+        show={showEditProject}
+        onClose={() => setShowEditProject(false)}
+        onProjectUpdate={handleProjectUpdate}
+        SelectedEmployeeList={Array.isArray(project.team) ? project.team : []}
       />
     </div>
   );

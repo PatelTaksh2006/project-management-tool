@@ -13,7 +13,7 @@ router.post('/signup',async (req,res)=>{
 
 router.post('/login',async (req,res)=>{
     const {Email,Password}=req.body;
-    const user=await User.findOne({Email}).populate('tasks');
+    const user=await User.findOne({Email}).populate('tasks').populate('project');
     if(user && await bcrypt.compare(Password,user.Password)){
         const token=jwt.sign({userId:user._id},process.env.JWT_SECRET,{expiresIn:process.env.JWT_EXPIRES_IN});
         

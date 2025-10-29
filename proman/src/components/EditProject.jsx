@@ -162,16 +162,7 @@ if (formData.Status !== 'Active' && project && project.team) {
   teamMembers = selectedTeam.map(emp => emp._id);
 }
 
-let updatedProject;
-if (formData.Status === 'Completed') {
-  // Only allow Status updates; preserve other fields from original project
-  updatedProject = {
-    ...project,
-    _id: formData._id,
-    Status: formData.Status,
-  };
-} else {
-  updatedProject = {
+const updatedProject = {
     ...project,
     _id: formData._id,
     Name: formData.Name,
@@ -184,7 +175,6 @@ if (formData.Status === 'Completed') {
     budget: Number(formData.budget) || 0,
     team: teamMembers,   // <--- only IDs go to backend
   };
-}
 
 
     if (onProjectUpdate) {

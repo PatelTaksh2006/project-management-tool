@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate,Link} from "react-router-dom";
 const initialState = {
+    EmpId:"",
   Name: "",
   Email: "",
   Password: "",
@@ -102,6 +103,34 @@ export default function Signup() {
                 </div>
 
                 <form onSubmit={handleSubmit} autoComplete="off">
+                    <div style={{ marginBottom: '20px' }}>
+                        <label style={{
+                            display: 'block',
+                            marginBottom: '8px',
+                            color: '#374151',
+                            fontSize: '14px',
+                            fontWeight: '500'
+                        }}>Employee ID</label>
+                        <input 
+                            name="EmpId" 
+                            value={form.EmpId} 
+                            onChange={handleChange} 
+                            required
+                            style={{
+                                width: '100%',
+                                padding: '12px 16px',
+                                border: '1px solid #d1d5db',
+                                borderRadius: '8px',
+                                fontSize: '14px',
+                                outline: 'none',
+                                transition: 'border-color 0.2s ease',
+                                boxSizing: 'border-box'
+                            }}
+                            onFocus={(e) => e.target.style.borderColor = '#4f46e5'}
+                            onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+                            placeholder="Enter your employee ID"
+                        />
+                    </div>
                     <div style={{ marginBottom: '20px' }}>
                         <label style={{
                             display: 'block',

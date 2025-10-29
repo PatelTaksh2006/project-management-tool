@@ -8,6 +8,7 @@ import Employee_task from "./pages/employee/Employee_task";
 import Login from "./pages/shared/login";
 import Signup from "./pages/shared/signup";
 import { UserProvider } from "./contexts/UserContext";
+import Manager_Employees from "./pages/Manager/Manager_Employees";
 function App() {
   return (
     <UserProvider>
@@ -18,6 +19,7 @@ function App() {
           <Route path="/manager/projects/:id" element={<ProjectTask />}></Route>
           <Route path="/manager" element={<Manager_Dashboard />}></Route>
           <Route path="/manager/project" element={<Manager_Project />}></Route>
+          <Route path="/manager/employees" element={<Manager_Employees />}></Route>
           <Route path="/employee" element={<Employee_Dashboard />}></Route>
           <Route path="/employee/tasks" element={<Employee_task />}></Route>
         </Routes>
