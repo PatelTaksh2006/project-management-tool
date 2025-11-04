@@ -6,6 +6,7 @@ const Login = () => {
   const [Email, setEmail] = useState("");
   const [Password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { loginUser } = useUser();
 
@@ -19,6 +20,8 @@ const Login = () => {
     }
 
     try {
+      setLoading(true);
+
       const res = await fetch("http://localhost:3001/api/user/login", {
         method: "POST",
         body: JSON.stringify({ Email, Password }),
@@ -27,28 +30,60 @@ const Login = () => {
         },
       });
 
-      const data = await res.json();
+      let data = null;
+      try {
+        data = await res.json();
+      } catch (jsonErr) {
+        console.error('Failed to parse login response as JSON', jsonErr);
+      }
+
+      const mapServerErrorToMessage = (body, status) => {
+        if (body && body.error) {
+          switch (body.error) {
+            case 'AuthenticationFailed':
+            case 'InvalidCredentials':
+              return 'Incorrect email or password.';
+            case 'ValidationError':
+              return 'Invalid input. Please check your email and password.';
+            case 'ServerConfigurationError':
+              return 'Server configuration issue. Try again later.';
+            case 'InternalServerError':
+            default:
+              return 'Unable to sign in. Please try again later.';
+          }
+        }
+
+        if (status === 401) return 'Incorrect email or password.';
+        if (status === 400) return 'Invalid input. Please check your email and password.';
+        if (status === 500) return 'Server error. Please try again later.';
+        return 'Unable to sign in. Please try again.';
+      };
 
       if (res.ok) {
-        console.log("Login success:", data);
-        
+        console.info('Login success (server):', data);
+
         // Store user and token in context
         loginUser(data.user, data.token);
 
         // Navigate based on user role
-        if (data.user.isManager === true) {
+        if (data.user && data.user.isManager === true) {
           navigate("/manager");
-        } else if (data.user.isManager === false) {
+        } else if (data.user && data.user.isManager === false) {
           navigate("/employee");
         } else {
           setError("Unknown user role");
         }
       } else {
-        setError(data.message || "Invalid credentials");
+        const userMessage = mapServerErrorToMessage(data, res.status);
+        setError(userMessage);
+        console.error('Login failed', { status: res.status, body: data });
       }
     } catch (err) {
       console.error("Login error:", err);
-      setError("Something went wrong. Please try again.");
+      setError("Network error. Please check your connection and try again.");
+    }
+    finally {
+      setLoading(false);
     }
   };    
 

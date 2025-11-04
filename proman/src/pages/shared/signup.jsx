@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate,Link} from "react-router-dom";
+import { useNavigate,Link, Navigate} from "react-router-dom";
 const initialState = {
     EmpId:"",
   Name: "",
@@ -16,13 +16,17 @@ const initialState = {
 
 
 export default function Signup() {
-            // const navigate=useNavigate();
+    const navigate=useNavigate();
 
     const [form, setForm] = useState(initialState);
-    const [error, setError] = useState("");
+        const [error, setError] = useState("");
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
+        
+
+
+  setError("");
         setForm((prev) => ({
             ...prev,
             [name]: type === "checkbox" ? checked : value,
@@ -30,32 +34,118 @@ export default function Signup() {
     };
 
     const handleSubmit =async (e) => {
-        e.preventDefault();
-        setError("");
+    e.preventDefault();
+    setError("");
         console.log(form.Password + "  " + form.ConfirmPassword);
         if (form.Password !== form.ConfirmPassword) {
             setError("Passwords do not match.");
             return;
         }
-        // Submit form logic here (e.g., API call)
-        const res=await fetch('http://localhost:3001/api/user/signup',{
-            method:'POST',
-            body:JSON.stringify(form),
-            headers:{
-                'Content-Type':'application/json'
-            }
-        });
+        else if(form.phone.length!==10){
+            setError("Phone number must be 10 digits long.");
+            return;
+        }
+        else if(form.EmpId && !/^[EM]\d{5}$/.test(form.EmpId)){
+            setError("Employee ID must be exactly one letter (E/M) followed by 5 digits.");
+            return;
+        }
+else if ((() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-        if(res.ok)
-        {
-            res.json().then(data=>{
-                console.log(data);
+    const selectedDate = new Date(form.joiningDate);
+    selectedDate.setHours(0, 0, 0, 0);
+
+    return selectedDate > today;
+})()) {
+    setError("Joining date cannot be in the future.");
+    return;
+}
+else if(!/^[A-Za-z\s]+$/.test(form.Name))
+{
+    setError("Name cannot contain numbers/special characters.");
+    return;
+}
+else if(!/^[A-Za-z\s]+$/.test(form.role))
+{
+    setError("Role cannot contain numbers/special characters.");
+    return;
+}
+else if(!/^[A-Za-z\s]+$/.test(form.department))
+{
+    setError("Department cannot contain numbers/special characters.");
+    return;
+}
+        // Submit form logic here (e.g., API call)
+        const API = 'http://localhost:3001/api/user/signup';
+
+        // Map server error codes to safe, user-facing messages
+        const mapServerErrorToMessage = (data, status) => {
+            if (data && data.error) {
+                switch (data.error) {
+                    case 'MissingFields':
+                        return 'Please fill all required fields.';
+                    case 'DuplicateKey':
+                        return 'An account with that email/employee Id already exists.';
+                    case 'ValidationError':
+                        return 'Some fields are invalid. Please check your input.';
+                    case 'HashingError':
+                        return 'Unable to process your password. Try again later.';
+                    case 'ServerConfigurationError':
+                        return 'Server is not configured correctly. Try again later.';
+                    case 'AuthenticationFailed':
+                        return 'Incorrect credentials.';
+                    case 'InternalServerError':
+                    default:
+                        return 'Something went wrong. Please try again later.';
+                }
+            }
+
+            // Fallback by HTTP status
+            if (status === 400) return 'Invalid input. Please check the form.';
+            if (status === 409) return 'An account with that email already exists.';
+            if (status === 500) return 'Server error. Please try again later.';
+            return 'Something went wrong. Please try again.';
+        };
+
+        try {
+            const res = await fetch(API, {
+                method: 'POST',
+                body: JSON.stringify(form),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
             });
 
+            let data = null;
+            try {
+                data = await res.json();
+            } catch (jsonErr) {
+                // Non-JSON response
+                console.error('Failed to parse signup response as JSON', jsonErr);
+            }
+
+            if (res.ok) {
+                    // Successful signup — show a browser alert and reset form
+                    alert('Account created successfully. Please sign in.');
+                setForm(initialState);
+                navigate('/');
+                console.info('Signup success (server):', data);
+                return;
+            }
+
+            // Not OK — map the server error to a safe frontend message
+            const userMessage = mapServerErrorToMessage(data, res.status);
+            setError(userMessage);
+
+            // Keep full server response in console for debugging (do not show to users)
+            console.error('Signup failed', { status: res.status, body: data });
+
+        } catch (networkErr) {
+            console.error('Network or fetch error during signup', networkErr);
+            setError('Network error. Please check your connection and try again.');
+            
         }
-        
-        alert("Signup successful!");
-        setForm(initialState);
     };
 
     return (
@@ -100,6 +190,26 @@ export default function Signup() {
                     }}>
                         Join our project management platform
                     </p>
+                    <div role="note" style={{
+                        marginTop: '10px',
+                        fontSize: '14px',
+                        color: '#111827',
+                        fontWeight: 600,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        background: 'rgba(220,38,38,0.04)',
+                        padding: '6px 10px',
+                        borderRadius: '6px'
+                    }}>
+                        <span style={{
+                            color: '#dc2626',
+                            fontWeight: 800,
+                            fontSize: '16px',
+                            lineHeight: '1'
+                        }} aria-hidden="true">*</span>
+                        <span>Required fields are marked with a red <strong>*</strong>.</span>
+                    </div>
                 </div>
 
                 <form onSubmit={handleSubmit} autoComplete="off">
@@ -110,11 +220,11 @@ export default function Signup() {
                             color: '#374151',
                             fontSize: '14px',
                             fontWeight: '500'
-                        }}>Employee ID</label>
+                        }}>Employee ID<span style={{ color: '#dc2626' }}>*</span></label>
                         <input 
-                            name="EmpId" 
+                            name="EmpId"
                             value={form.EmpId} 
-                            onChange={handleChange} 
+                            onChange={handleChange}
                             required
                             style={{
                                 width: '100%',
@@ -127,7 +237,7 @@ export default function Signup() {
                                 boxSizing: 'border-box'
                             }}
                             onFocus={(e) => e.target.style.borderColor = '#4f46e5'}
-                            onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+                            onBlur={(e) => {e.target.style.borderColor = '#d1d5db';}}
                             placeholder="Enter your employee ID"
                         />
                     </div>
@@ -138,7 +248,7 @@ export default function Signup() {
                             color: '#374151',
                             fontSize: '14px',
                             fontWeight: '500'
-                        }}>Name</label>
+                        }}>Name<span style={{ color: '#dc2626' }}>*</span></label>
                         <input 
                             name="Name" 
                             value={form.Name} 
@@ -166,7 +276,7 @@ export default function Signup() {
                             color: '#374151',
                             fontSize: '14px',
                             fontWeight: '500'
-                        }}>Email</label>
+                        }}>Email<span style={{ color: '#dc2626' }}>*</span></label>
                         <input 
                             name="Email" 
                             type="email" 
@@ -196,7 +306,7 @@ export default function Signup() {
                                 color: '#374151',
                                 fontSize: '14px',
                                 fontWeight: '500'
-                            }}>Password</label>
+                            }}>Password<span style={{ color: '#dc2626' }}>*</span></label>
                             <input 
                                 name="Password" 
                                 type="password" 
@@ -225,7 +335,7 @@ export default function Signup() {
                                 color: '#374151',
                                 fontSize: '14px',
                                 fontWeight: '500'
-                            }}>Confirm Password</label>
+                            }}>Confirm Password<span style={{ color: '#dc2626' }}>*</span></label>
                             <input 
                                 name="ConfirmPassword" 
                                 type="password" 
@@ -275,7 +385,7 @@ export default function Signup() {
                                 color: '#374151',
                                 fontSize: '14px',
                                 fontWeight: '500'
-                            }}>Role</label>
+                            }}>Role<span style={{ color: '#dc2626' }}>*</span></label>
                             <input 
                                 name="role" 
                                 value={form.role} 
@@ -303,7 +413,7 @@ export default function Signup() {
                                 color: '#374151',
                                 fontSize: '14px',
                                 fontWeight: '500'
-                            }}>Department</label>
+                            }}>Department<span style={{ color: '#dc2626' }}>*</span></label>
                             <input 
                                 name="department" 
                                 value={form.department} 
@@ -333,7 +443,7 @@ export default function Signup() {
                                 color: '#374151',
                                 fontSize: '14px',
                                 fontWeight: '500'
-                            }}>Joining Date</label>
+                            }}>Joining Date<span style={{ color: '#dc2626' }}>*</span></label>
                             <input 
                                 name="joiningDate" 
                                 type="date" 
@@ -361,9 +471,10 @@ export default function Signup() {
                                 color: '#374151',
                                 fontSize: '14px',
                                 fontWeight: '500'
-                            }}>Phone</label>
+                            }}>Phone<span style={{ color: '#dc2626' }}>*</span></label>
                             <input 
                                 name="phone" 
+                                type="number"
                                 value={form.phone} 
                                 onChange={handleChange} 
                                 required
@@ -390,7 +501,7 @@ export default function Signup() {
                             color: '#374151',
                             fontSize: '14px',
                             fontWeight: '500'
-                        }}>Address</label>
+                        }}>Address<span style={{ color: '#dc2626' }}>*</span></label>
                         <input 
                             name="address" 
                             value={form.address} 
@@ -412,19 +523,7 @@ export default function Signup() {
                         />
                     </div>
                     
-                    {error && (
-                        <div style={{
-                            background: '#fef2f2',
-                            border: '1px solid #fecaca',
-                            color: '#dc2626',
-                            padding: '12px',
-                            borderRadius: '8px',
-                            marginBottom: '20px',
-                            fontSize: '14px'
-                        }}>
-                            {error}
-                        </div>
-                    )}
+                    
                     
                     <button 
                         type="submit" 
@@ -445,6 +544,19 @@ export default function Signup() {
                     >
                         Create Account
                     </button>
+                    {error && (
+                        <div style={{
+                            background: '#fef2f2',
+                            border: '1px solid #fecaca',
+                            color: '#dc2626',
+                            padding: '12px',
+                            borderRadius: '8px',
+                            marginTop: '16px',
+                            fontSize: '14px'
+                        }}>
+                            {error}
+                        </div>
+                    )}
                 </form>
                 
                 <div style={{ 
