@@ -76,21 +76,21 @@ export default function EditProject({
   // Determine lock condition: whenever the form status is 'Completed', lock all fields except Status
 
   // When status becomes 'Completed', immediately revert editable fields and team back to original project values
-  useEffect(() => {
-    if (formData.Status === 'Completed' && project) {
-      setFormData((prev) => ({
-        ...prev,
-        Name: project.Name,
-        client: project.client,
-        description: project.description,
-        budget: project.budget || prev.budget,
-        StartDate: normalizeDate(project.StartDate || project.Start_Date || project.StartDate),
-        EndDate: normalizeDate(project.EndDate || project.End_date || project.EndDate),
-      }));
-      // revert selected team to original
-      setSelectedTeam(originalTeam);
-    }
-  }, [formData.Status, project, originalTeam]);
+  // useEffect(() => {
+  //   if (formData.Status === 'Completed' && project) {
+  //     setFormData((prev) => ({
+  //       ...prev,
+  //       Name: project.Name,
+  //       client: project.client,
+  //       description: project.description,
+  //       budget: project.budget || prev.budget,
+  //       StartDate: normalizeDate(project.StartDate || project.Start_Date || project.StartDate),
+  //       EndDate: normalizeDate(project.EndDate || project.End_date || project.EndDate),
+  //     }));
+  //     // revert selected team to original
+  //     setSelectedTeam(originalTeam);
+  //   }
+  // }, [formData.Status, project, originalTeam]);
 
 
   // Update available employees whenever selectedTeam changes
@@ -127,6 +127,18 @@ export default function EditProject({
         alert("Cannot mark project as Completed while there are incomplete tasks.");
         return;
       }
+    }
+    if(name==="EndDate" && formData.StartDate && value < formData.StartDate){
+      alert("End Date cannot be before Start Date");
+      return;
+    }
+    if(name==="StartDate" && formData.EndDate && value > formData.EndDate){
+      alert("Start Date cannot be after End Date");
+      return;
+    }
+    if(name==="budget" && Number(value)<0){
+      alert("Budget cannot be negative");
+      return;
     }
     setFormData((prevData) => ({
       ...prevData,
@@ -285,7 +297,7 @@ const updatedProject = {
           )}
           {/* Team Members */}
           
-          <Form.Group className="mb-3" style={{ display: formData.Status !== "Active" ? "none" : "block" }}>
+          <Form.Group className="mb-3">
             <Form.Label>Team Members</Form.Label>
             <Row>
               <Col md={6}>
@@ -305,7 +317,7 @@ const updatedProject = {
                           variant="outline-danger"
                           size="sm"
                           onClick={() => handleRemoveEmployee(emp._id)}
-                          disabled={formData.Status !== "Active" || formData.Status === 'Completed'}
+                          disabled={formData.Status !== "Active"}
                         >
                           Remove
                         </Button>
@@ -331,7 +343,7 @@ const updatedProject = {
                           variant="outline-primary"
                           size="sm"
                           onClick={() => handleAddEmployee(emp)}
-                          disabled={formData.Status !== "Active" || formData.Status === 'Completed'}
+                          disabled={formData.Status !== "Active"}
                         >
                           Add
                         </Button>

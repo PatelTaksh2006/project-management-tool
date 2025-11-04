@@ -49,6 +49,14 @@ export default function Signup() {
             setError("Employee ID must be exactly one letter (E/M) followed by 5 digits.");
             return;
         }
+        else if(form.EmpId[0]==='M' && !form.isManager){
+            setError("Employee ID starting with 'M' must be for a Manager account.");
+            return;
+        }
+        else if(form.EmpId[0]==='E' && form.isManager){
+            setError("Employee ID starting with 'E' cannot be for a Manager account.");
+            return;
+        }
 else if ((() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);

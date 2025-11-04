@@ -34,8 +34,16 @@ export default function AddNewProject({ show, onClose, onProjectAdd, EmployeeLis
   // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    if(name==="End_date" && value < formData.Start_Date){
+    if(name==="End_date" && formData.Start_Date && value < formData.Start_Date){
       alert("End Date cannot be before Start Date");
+      return;
+    }
+    if(name==="Start_Date" && formData.End_date && value > formData.End_date){
+      alert("Start Date cannot be after End Date");
+      return;
+    }
+    if(name==="budget" && Number(value)<0){
+      alert("Budget cannot be negative");
       return;
     }
     setFormData((prevData) => ({
@@ -95,9 +103,25 @@ export default function AddNewProject({ show, onClose, onProjectAdd, EmployeeLis
       </Modal.Header>
       <Form onSubmit={handleSubmit}>
         <Modal.Body>
-          
+          {/* Helper note for required fields */}
+          <div role="note" style={{
+            marginBottom: 12,
+            fontSize: 14,
+            color: '#111827',
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            background: 'rgba(220,38,38,0.04)',
+            padding: '6px 10px',
+            borderRadius: 6
+          }}>
+            <span style={{ color: '#dc2626', fontWeight: 800, fontSize: 16 }} aria-hidden="true">*</span>
+            <span style={{ color: '#374151' }}>Required fields are marked with a red <strong>*</strong>.</span>
+          </div>
+
           <Form.Group className="mb-3">
-            <Form.Label>Project Name</Form.Label>
+            <Form.Label>Project Name<span style={{ color: '#dc2626' }}>*</span></Form.Label>
             <Form.Control
               type="text"
               name="Name"
@@ -139,7 +163,7 @@ export default function AddNewProject({ show, onClose, onProjectAdd, EmployeeLis
           </Form.Group>
 
           <Form.Group className="mb-3">
-            <Form.Label>Start Date</Form.Label>
+            <Form.Label>Start Date <span style={{ color: '#dc2626' }}>*</span></Form.Label>
             <Form.Control
               type="date"
               name="Start_Date"
@@ -149,7 +173,7 @@ export default function AddNewProject({ show, onClose, onProjectAdd, EmployeeLis
             />
           </Form.Group> 
           <Form.Group className="mb-3">
-            <Form.Label>End Date</Form.Label>
+            <Form.Label>End Date <span style={{ color: '#dc2626' }}>*</span></Form.Label>
             <Form.Control
               type="date"
               name="End_date"
@@ -159,7 +183,7 @@ export default function AddNewProject({ show, onClose, onProjectAdd, EmployeeLis
             />
           </Form.Group>
           <Form.Group className="mb-3">
-            <Form.Label>Status</Form.Label>
+            <Form.Label>Status <span style={{ color: '#dc2626' }}>*</span></Form.Label>
             <Form.Select
               name="Status"
               value={formData.Status}
@@ -180,7 +204,7 @@ export default function AddNewProject({ show, onClose, onProjectAdd, EmployeeLis
               {EmployeeList &&
                 EmployeeList.map((emp) => (
                   <option key={emp._id} value={emp._id}>
-                    {emp.Name}-{emp.role}
+                    {emp.EmpId}-{emp.Name}-{emp.role}
                   </option>
                 ))}
             </Form.Select>
