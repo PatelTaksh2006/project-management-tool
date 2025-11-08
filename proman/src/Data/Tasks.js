@@ -76,14 +76,35 @@ async function Add(newTask) {
 
 async function update(updatedTask) {
   try {
-    await fetch("http://localhost:3001/api/task/update", {
+    const response = await fetch("http://localhost:3001/api/task/update", {
       method: "PUT",
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updatedTask),
     });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      alert(`❌ Failed to Update Task!\n\n${errorData.error || 'An unexpected error occurred. Please try again.'}`);
+      // Don't refresh - task was not updated
+      throw new Error(errorData.error || 'Update failed'); // Throw error to trigger catch block in caller
+    }
+    
+    // Parse the response to check for flagForEnonet
+    const data = await response.json();
+    if (data.flagForEnonet) {
+      alert('⚠️ File Not Found!\n\nThe file you are trying to delete was not found on the server. It may have already been deleted.\n\nThe task has been updated, but the file could not be removed from disk.');
+    } 
+    
+    // refresh tasks for the project only after successful update
     await getTasks(updatedTask.projectId);
   } catch (err) {
+    // Re-throw API errors
+    if (err.message === 'Update failed') {
+      throw err; // Re-throw to caller
+    }
     console.error("Failed to update task:", err);
+    alert('❌ Network Error!\n\nCould not connect to the server. Please check your internet connection and try again.');
+    throw err; // Throw to trigger catch block in caller
   }
 }
 

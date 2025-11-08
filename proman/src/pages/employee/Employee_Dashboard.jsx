@@ -1,14 +1,33 @@
 import React, { useState, useEffect } from "react";
 import Navbar from "../../components/Navbar";
 import Sidebar from "../../components/Sidebar";
-import { Row, Col, Card, Badge, ProgressBar, ListGroup, Container, Button } from "react-bootstrap";
+import { Row, Col, Card, Badge, ProgressBar, ListGroup, Container, Button, OverlayTrigger, Popover } from "react-bootstrap";
 import { useUser } from "../../contexts/UserContext";
+import UpdateProfile from "../../components/UpdateProfile";
 
 export default function Employee_Dashboard() {
-  const { user } = useUser();
+  const { user, refreshUser } = useUser();
+  const [showUpdateProfile, setShowUpdateProfile] = useState(false);
   console.log("User object:", user);
   const employeeId = user?._id;
   const employeeName = user?.name || user?.Name || user?.Email || "Employee";
+
+  // Refresh user data from backend when component mounts or page is navigated to
+  useEffect(() => {
+    const fetchFreshData = async () => {
+      console.log('=== Employee_Dashboard: Starting data refresh ===');
+      console.log('Current user before refresh:', user?._id, 'Tasks:', user?.tasks?.length);
+      
+      const success = await refreshUser();
+      
+      console.log('Refresh result:', success);
+      if (!success) {
+        console.warn('Failed to refresh user data, using cached data');
+      }
+    };
+
+    fetchFreshData();
+  }, []); // Empty dependency array = run only on mount
 
   // Get tasks and projects directly from user object
   const myTasks = user?.tasks || [];
@@ -20,7 +39,7 @@ export default function Employee_Dashboard() {
   // Calculate metrics
   const completedTasks = myTasks.filter(task => task.status === "Completed").length;
   const inProgressTasks = myTasks.filter(task => task.status === "In Progress").length;
-  const pendingTasks = myTasks.filter(task => task.status === "Pending" || task.status === "Not Started").length;
+  const pendingTasks = myTasks.filter(task => task.status === "To Do" || task.status === "Not Started").length;
   
   console.log("Task counts - Total:", myTasks.length, "Completed:", completedTasks, "In Progress:", inProgressTasks, "Pending:", pendingTasks);
   
@@ -29,6 +48,8 @@ export default function Employee_Dashboard() {
 
   // Get overdue tasks (only tasks that are past due, not including today)
   const overdueTasks = myTasks.filter(task => {
+    console.log(task.dueDate, typeof task.dueDate);
+
     if (!task.dueDate || task.status === "Completed") return false;
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Start of today
@@ -84,29 +105,52 @@ export default function Employee_Dashboard() {
               boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
               border: '1px solid #e5e7eb'
             }}>
-              <h4 style={{ 
-                margin: '0 0 20px 0', 
-                color: '#374151', 
-                fontSize: '18px', 
-                fontWeight: '600',
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                marginBottom: '20px',
                 paddingBottom: '12px',
                 borderBottom: '1px solid #e5e7eb'
               }}>
-                Profile Information
-              </h4>
+                <h4 style={{ 
+                  margin: 0, 
+                  color: '#374151', 
+                  fontSize: '18px', 
+                  fontWeight: '600'
+                }}>
+                  Profile Information
+                </h4>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setShowUpdateProfile(true)}
+                  style={{
+                    borderRadius: '8px',
+                    padding: '6px 16px',
+                    fontWeight: '500'
+                  }}
+                >
+                  ✏️ Update Profile
+                </Button>
+              </div>
               <Row>
                 <Col md={6}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <strong style={{ color: '#374151', minWidth: '100px' }}>Name:</strong>
+                      <strong style={{ color: '#374151', minWidth: '120px' }}>Employee ID:</strong>
+                      <span style={{ color: '#6b7280' }}>{user?.EmpId || 'N/A'}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <strong style={{ color: '#374151', minWidth: '120px' }}>Name:</strong>
                       <span style={{ color: '#6b7280' }}>{user?.Name || user?.name || 'N/A'}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <strong style={{ color: '#374151', minWidth: '100px' }}>Email:</strong>
+                      <strong style={{ color: '#374151', minWidth: '120px' }}>Email:</strong>
                       <span style={{ color: '#6b7280' }}>{user?.Email || user?.email || 'N/A'}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <strong style={{ color: '#374151', minWidth: '100px' }}>Role:</strong>
+                      <strong style={{ color: '#374151', minWidth: '120px' }}>Role:</strong>
                       <span style={{ 
                         background: '#f3f4f6', 
                         color: '#374151', 
@@ -357,140 +401,177 @@ export default function Employee_Dashboard() {
                 />
               </div>
 
-              {/* Overdue Tasks - Full Width */}
-              <div style={{
-                background: overdueTasks.length > 0 
-                  ? 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)' 
-                  : 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
-                padding: '20px',
-                borderRadius: '12px',
-                border: overdueTasks.length > 0 
-                  ? '1px solid #fecaca' 
-                  : '1px solid #bbf7d0',
-                marginBottom: '16px',
-                boxShadow: overdueTasks.length > 0 
-                  ? '0 4px 12px rgba(239, 68, 68, 0.1)' 
-                  : '0 4px 12px rgba(34, 197, 94, 0.1)'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ 
-                      background: overdueTasks.length > 0 ? '#ef4444' : '#22c55e', 
-                      color: 'white', 
-                      width: '40px', 
-                      height: '40px', 
-                      borderRadius: '10px', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center',
-                      fontSize: '20px',
-                      boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
-                    }}>
-                      {overdueTasks.length > 0 ? '⚠️' : '✅'}
-                    </div>
-                    <div>
-                      <h5 style={{ 
-                        margin: 0, 
-                        color: '#374151', 
-                        fontSize: '18px', 
-                        fontWeight: '600'
-                      }}>
-                        Overdue Tasks Status
-                      </h5>
-                      <div style={{ 
-                        fontSize: '14px', 
-                        color: overdueTasks.length > 0 ? '#7f1d1d' : '#065f46',
-                        fontWeight: '500',
-                        marginTop: '2px'
-                      }}>
-                        {overdueTasks.length > 0 ? 'Immediate attention required' : 'All tasks are on schedule'}
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{ 
-                    background: overdueTasks.length > 0 ? '#ef4444' : '#22c55e', 
-                    color: 'white', 
-                    padding: '10px 20px', 
-                    borderRadius: '25px', 
-                    fontSize: '18px', 
-                    fontWeight: '700',
-                    minWidth: '50px',
-                    textAlign: 'center',
-                    boxShadow: '0 3px 8px rgba(0,0,0,0.2)'
-                  }}>
-                    {overdueTasks.length}
-                  </div>
-                </div>
-
-                {/* Overdue Tasks List */}
-                {overdueTasks.length > 0 ? (
+              {/* Overdue Tasks + Projects (split view) */}
+              <Row style={{ marginBottom: '16px' }}>
+                <Col md={6} style={{ paddingRight: 12, marginBottom: 12 }}>
                   <div style={{
-                    maxHeight: '200px',
-                    overflowY: 'auto',
-                    paddingRight: '8px'
+                    background: overdueTasks.length > 0 
+                      ? 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)' 
+                      : 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+                    padding: '20px',
+                    borderRadius: '12px',
+                    border: overdueTasks.length > 0 
+                      ? '1px solid #fecaca' 
+                      : '1px solid #bbf7d0',
+                    boxShadow: overdueTasks.length > 0 
+                      ? '0 4px 12px rgba(239, 68, 68, 0.1)' 
+                      : '0 4px 12px rgba(34, 197, 94, 0.1)'
                   }}>
-                    {overdueTasks.map((task, index) => (
-                      <div key={task._id || index} style={{
-                        background: 'rgba(255, 255, 255, 0.8)',
-                        border: '1px solid rgba(239, 68, 68, 0.2)',
-                        borderRadius: '8px',
-                        padding: '12px 16px',
-                        marginBottom: '8px',
-                        borderLeft: '4px solid #ef4444'
-                      }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <div style={{ 
+                          background: overdueTasks.length > 0 ? '#ef4444' : '#22c55e', 
+                          color: 'white', 
+                          width: '40px', 
+                          height: '40px', 
+                          borderRadius: '10px', 
                           display: 'flex', 
-                          justifyContent: 'space-between', 
-                          alignItems: 'flex-start'
+                          alignItems: 'center', 
+                          justifyContent: 'center',
+                          fontSize: '20px',
+                          boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
                         }}>
-                          <div style={{ flex: 1 }}>
-                            <h6 style={{ 
-                              margin: '0 0 4px 0', 
-                              color: '#7f1d1d', 
-                              fontSize: '15px', 
-                              fontWeight: '600'
-                            }}>
-                              {task.name || 'Unnamed Task'}
-                            </h6>
-                            <div style={{ 
-                              fontSize: '13px', 
-                              color: '#991b1b',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '8px'
-                            }}>
-                              <span>📅 Due: {new Date(task.dueDate).toLocaleDateString()}</span>
-                              <Badge bg="danger" style={{ fontSize: '10px' }}>
-                                {(() => {
-                                  const today = new Date();
-                                  today.setHours(0, 0, 0, 0);
-                                  const dueDate = new Date(task.dueDate);
-                                  dueDate.setHours(0, 0, 0, 0);
-                                  const diffDays = Math.floor((today - dueDate) / (1000 * 60 * 60 * 24));
-                                  return diffDays;
-                                })()} days overdue
-                              </Badge>
-                            </div>
+                          {overdueTasks.length > 0 ? '⚠️' : '✅'}
+                        </div>
+                        <div>
+                          <h5 style={{ 
+                            margin: 0, 
+                            color: '#374151', 
+                            fontSize: '18px', 
+                            fontWeight: '600'
+                          }}>
+                            Overdue Tasks
+                          </h5>
+                          <div style={{ 
+                            fontSize: '14px', 
+                            color: overdueTasks.length > 0 ? '#7f1d1d' : '#065f46',
+                            fontWeight: '500',
+                            marginTop: '2px'
+                          }}>
+                            {overdueTasks.length > 0 ? 'Immediate attention required' : 'No overdue tasks'}
                           </div>
-                          <Badge bg="warning" style={{ fontSize: '11px', marginLeft: '12px' }}>
-                            {task.status}
-                          </Badge>
                         </div>
                       </div>
-                    ))}
+                      <div style={{ 
+                        background: overdueTasks.length > 0 ? '#ef4444' : '#22c55e', 
+                        color: 'white', 
+                        padding: '10px 20px', 
+                        borderRadius: '25px', 
+                        fontSize: '18px', 
+                        fontWeight: '700',
+                        minWidth: '50px',
+                        textAlign: 'center',
+                        boxShadow: '0 3px 8px rgba(0,0,0,0.2)'
+                      }}>
+                        {overdueTasks.length}
+                      </div>
+                    </div>
+
+                    {overdueTasks.length > 0 ? (
+                      <div style={{ maxHeight: '260px', overflowY: 'auto', paddingRight: '8px' }}>
+                        {overdueTasks.map((task, index) => (
+                          <div key={task._id || index} style={{
+                            background: 'rgba(255, 255, 255, 0.8)',
+                            border: '1px solid rgba(239, 68, 68, 0.2)',
+                            borderRadius: '8px',
+                            padding: '12px 16px',
+                            marginBottom: '8px',
+                            borderLeft: '4px solid #ef4444'
+                          }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                              <div style={{ flex: 1 }}>
+                                <h6 style={{ margin: '0 0 4px 0', color: '#7f1d1d', fontSize: '15px', fontWeight: '600' }}>{task.name || 'Unnamed Task'}</h6>
+                                <div style={{ fontSize: '13px', color: '#991b1b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <span>📅 Due: {new Date(task.dueDate).toLocaleDateString()}</span>
+                                  <Badge bg="danger" style={{ fontSize: '10px' }}>{(() => { const today = new Date(); today.setHours(0,0,0,0); const dueDate = new Date(task.dueDate); dueDate.setHours(0,0,0,0); const diffDays = Math.floor((today - dueDate)/(1000*60*60*24)); return diffDays; })()} days overdue</Badge>
+                                </div>
+                              </div>
+                              <Badge bg="warning" style={{ fontSize: '11px', marginLeft: '12px' }}>{task.status}</Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '20px', color: '#065f46' }}>
+                        <div style={{ fontSize: '32px', marginBottom: '12px' }}>🎉</div>
+                        <p style={{ margin: 0, fontSize: '16px', fontWeight: '600' }}>Great job!</p>
+                        <p style={{ margin: '4px 0 0 0', fontSize: '14px' }}>No overdue tasks. Keep up the excellent work!</p>
+                      </div>
+                    )}
                   </div>
-                ) : (
+                </Col>
+
+                <Col md={6} style={{ paddingLeft: 12, marginBottom: 12 }}>
                   <div style={{
-                    textAlign: 'center',
+                    background: 'white',
+                    borderRadius: '12px',
                     padding: '20px',
-                    color: '#065f46'
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                    border: '1px solid #e5e7eb',
+                    height: '100%'
                   }}>
-                    <div style={{ fontSize: '32px', marginBottom: '12px' }}>🎉</div>
-                    <p style={{ margin: 0, fontSize: '16px', fontWeight: '600' }}>Great job!</p>
-                    <p style={{ margin: '4px 0 0 0', fontSize: '14px' }}>No overdue tasks. Keep up the excellent work!</p>
+                    <h4 style={{ margin: '0 0 20px 0', color: '#374151', fontSize: '18px', fontWeight: '600', paddingBottom: '12px', borderBottom: '1px solid #e5e7eb' }}>
+                      📁 My Projects
+                    </h4>
+                    <div style={{ maxHeight: '320px', overflowY: 'auto', paddingRight: '8px' }}>
+                      {myProjects && myProjects.length > 0 ? (
+                        myProjects.map((proj, idx) => {
+                          const popover = (
+                            <Popover id={`project-popover-${proj._id || idx}`}>
+                              <Popover.Header as="h6">{proj.Name || proj.name || 'Unnamed Project'}</Popover.Header>
+                              <Popover.Body style={{ maxWidth: '320px' }}>{proj.description || 'No description available.'}</Popover.Body>
+                            </Popover>
+                          );
+
+                          return (
+                            <OverlayTrigger
+                              key={proj._id || idx}
+                              trigger={["hover", "focus", "click"]}
+                              placement="auto"
+                              overlay={popover}
+                            >
+                              <div
+                                role="button"
+                                tabIndex={0}
+                                style={{
+                                  background: '#f8fafc',
+                                  border: '1px solid #e6edf3',
+                                  borderRadius: '8px',
+                                  padding: '12px',
+                                  marginBottom: '12px',
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                  cursor: 'pointer'
+                                }}
+                                onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.click(); }}
+                              >
+                                <div>
+                                  <div style={{ fontSize: '14px', fontWeight: '700', color: '#1f2937' }}>{proj.Name || proj.name || 'Unnamed Project'}</div>
+                                  <div style={{ fontSize: '12px', color: '#6b7280' }}>{proj.client ? `${proj.client}` : ''}</div>
+                                </div>
+                                <div style={{ textAlign: 'right' }}>
+                                  <div style={{ fontSize: '12px', fontWeight: '600' }}>{proj.Status || 'N/A'}</div>
+                                  <div style={{ fontSize: '11px', color: '#6b7280' }}>
+                                    {proj.StartDate && new Date(proj.StartDate).toLocaleDateString()}
+                                    {proj.StartDate && proj.EndDate && ' - '}
+                                    {proj.EndDate && new Date(proj.EndDate).toLocaleDateString()}
+                                  </div>
+                                </div>
+                              </div>
+                            </OverlayTrigger>
+                          );
+                        })
+                      ) : (
+                        <div style={{ textAlign: 'center', padding: '40px 20px', color: '#9ca3af' }}>
+                          <div style={{ fontSize: '36px', marginBottom: '12px' }}>📁</div>
+                          <p style={{ margin: 0, fontSize: '16px' }}>No projects assigned</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
+                </Col>
+              </Row>
             </div>
           </Container>
 
@@ -674,6 +755,13 @@ export default function Employee_Dashboard() {
           </Container>
         </Col>
       </Row>
+
+      {/* Update Profile Modal */}
+      <UpdateProfile
+        show={showUpdateProfile}
+        onClose={() => setShowUpdateProfile(false)}
+        currentUser={user}
+      />
     </div>
   );
 }

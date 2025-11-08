@@ -3,12 +3,12 @@ import Search_form from "../../components/Search_form";
 import Navbar from "../../components/Navbar";
 import Sidebar from "../../components/Sidebar";
 import { Row, Col, Container, Table, Badge, Form, Button } from "react-bootstrap";
-import { getEmployeeTasks, update as UpdateTask, subscribe as subscribeTasks } from "../../Data/Tasks";
+import { update as UpdateTask } from "../../Data/Tasks";
 import { useUser } from "../../contexts/UserContext";
 import { ArrowCounterclockwise, Check2Circle, Paperclip } from "react-bootstrap-icons";
 
 export default function Employee_task() {
-  const { user } = useUser();
+  const { user, token, loginUser, refreshUser } = useUser();
   const employeeId = user?._id || user?.id || user?.Id;
   const employeeName = user?.name || user?.Name || user?.Email || "Employee";
   const [searchValue, setSearchValue] = useState("");
@@ -17,36 +17,54 @@ export default function Employee_task() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [sortBy, setSortBy] = useState("None");
   const [tasks, setTasks] = useState(user?.tasks || []);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  // Date helpers: compare by day so 'due today' is not considered overdue
+  const MS_PER_DAY = 1000 * 60 * 60 * 24;
+  const startOfDay = (d) => {
+    const dt = new Date(d);
+    dt.setHours(0, 0, 0, 0);
+    return dt;
+  };
+  const today = startOfDay(new Date());
+  // Format date for display (strip ISO time if present)
+  const formatDate = (d) => {
+    if (!d) return '';
+    try {
+      const dt = new Date(d);
+      if (!isNaN(dt)) return dt.toLocaleDateString();
+    } catch (e) {}
+    if (typeof d === 'string' && d.indexOf('T') !== -1) return d.split('T')[0];
+    return String(d);
+  };
   // For file upload modal
   const [showFileInput, setShowFileInput] = useState(false);
   const [currentTaskId, setCurrentTaskId] = useState(null);
 
-  // Subscribe to the Tasks store and perform an initial load (mirror Project.jsx pattern)
+  // Refresh user data from backend when component mounts or page is navigated to
   useEffect(() => {
-    let mounted = true;
-    // Subscribe to shared tasks store updates
-    const unsub = subscribeTasks((ts) => {
-      if (!mounted) return;
-      if (Array.isArray(ts)) setTasks(ts);
-    });
-
-    // Initial load: fetch tasks for this employee
-    (async () => {
-      try {
-        if (employeeId) {
-          const fetched = await getEmployeeTasks(employeeId);
-          if (mounted) setTasks(Array.isArray(fetched) ? fetched : []);
-        }
-      } catch (err) {
-        console.error('Employee task initial load error:', err);
+    const fetchFreshData = async () => {
+      setIsRefreshing(true);
+      console.log('=== Employee_task: Starting data refresh ===');
+      console.log('Current user before refresh:', user?._id, 'Tasks:', user?.tasks?.length);
+      
+      const success = await refreshUser();
+      
+      console.log('Refresh result:', success);
+      if (!success) {
+        console.warn('Failed to refresh user data, using cached data');
       }
-    })();
-
-    return () => {
-      mounted = false;
-      if (typeof unsub === 'function') unsub();
+      setIsRefreshing(false);
     };
-  }, [employeeId]);
+
+    fetchFreshData();
+  }, []); // Empty dependency array = run only on mount
+
+  // Keep local tasks state always sourced from user.tasks
+  useEffect(() => {
+    console.log('Employee_task: User object changed, syncing tasks');
+    console.log('User tasks:', user?.tasks?.length, 'tasks');
+    setTasks(Array.isArray(user?.tasks) ? user.tasks : []);
+  }, [user]);
 
   // Helper to check if a task is assigned to this employee (tolerant to shapes)
   function isAssignedToEmployee(t) {
@@ -69,17 +87,13 @@ export default function Employee_task() {
       return false;
     }
   }
-
-  // Debug: log when tasks arrive/change
-  useEffect(() => {
-    console.log('Employee_task: tasks updated, count=', tasks.length);
-  }, [tasks]);
-
+console.log(user);
+console.log("user project",user?.project);
   // Only show projects for this employee
   const projectOptions = useMemo(() => {
-    const employeeTasks = tasks.filter(isAssignedToEmployee);
-    return Array.from(new Set(employeeTasks.map(t => t.projectId.Name)));
-  }, [employeeId, employeeName, tasks]);
+    console.log("user project options", user?.project);
+    return Array.isArray(user?.project) ? user.project : [];
+  }, [user]);
 
   // Filter and sort tasks
   const filteredTasks = useMemo(() => {
@@ -94,10 +108,17 @@ export default function Employee_task() {
       filtered = filtered.filter(t => t.priority === priorityFilter);
     }
     if (projectFilter !== "All") {
-      filtered = filtered.filter(t => t.projectId.Name === projectFilter);
+      filtered = filtered.filter(t => t.projectId._id === projectFilter);
     }
     if (statusFilter !== "All") {
+      if(statusFilter!="Due") {
       filtered = filtered.filter(t => t.status === statusFilter);
+      }      else {
+        filtered = filtered.filter(t => {
+          const dueDate = new Date(t.dueDate);
+          return dueDate < today;
+        });
+      }
     }
     // Sorting
     if (sortBy === "NameAsc") {
@@ -137,7 +158,20 @@ export default function Employee_task() {
       if (updated) {
         console.log('Marking task as completed:', updated);
         UpdateTask(updated)
-          .then(() => getEmployeeTasks(employeeId).then(fetched => setTasks(Array.isArray(fetched) ? fetched : [])))
+          .then(() => {
+            // Ensure UI reflects the updated task immediately (defensive merge)
+            setTasks(prev => prev.map(t => t._id === updated._id ? updated : t));
+            // Also update user context/tasks so other pages read the latest tasks
+            try {
+              if (user && Array.isArray(user.tasks)) {
+                const newUser = { ...user, tasks: user.tasks.map(t => t._id === updated._id ? updated : t) };
+                // update context and localStorage via loginUser helper (preserve token)
+                loginUser(newUser, token);
+              }
+            } catch (err) {
+              console.warn('Failed to sync updated task into user context:', err);
+            }
+          })
           .catch((e) => console.error('UpdateTask failed:', e));
         // optimistic update while backend call is in-flight
         setTasks((prev) => prev.map(t => t._id === taskId ? updated : t));
@@ -156,7 +190,9 @@ export default function Employee_task() {
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
     const task = tasks.find(t => t._id === currentTaskId);
-    const files = selectedFiles.map(file => {
+    
+    // Process files asynchronously to get URLs from backend
+    const uploadPromises = selectedFiles.map(async (file) => {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const safe = (s) => String(s || '').replace(/[^a-z0-9._-]/gi, '_');
 
@@ -170,44 +206,62 @@ export default function Employee_task() {
       const projectNameSafe = safe((task && (task.projectName || (task.project && (task.project.Name || task.project.name)))) || 'project');
 
       const storedName = `${originalBaseSafe}_${taskNameSafe}_${projectNameSafe}_${timestamp}${ext}`;
-      const url = `/upload_Documents/${storedName}`;
 
-
-
-      // Best-effort: try to upload the file to a generic upload endpoint so server can persist it
-      (async () => {
-        try {
-          const form = new FormData();
-          form.append('file', file, storedName);
-          // include optional target folder information if backend supports it
-          form.append('targetPath', 'upload_Documents');
-          const res = await fetch('http://localhost:3001/api/upload', {
-            method: 'POST',
-            body: form,
-          });
-          if (!res.ok) {
-            // Not fatal for UI, just log
-            console.warn('Upload failed for', storedName, await res.text());
-          }
-        } catch (err) {
-          console.warn('Upload request failed (server may not support /api/upload):', err);
+      try {
+        const form = new FormData();
+        form.append('file', file, storedName);
+        form.append('targetPath', 'upload_Documents');
+        const res = await fetch('http://localhost:3001/api/upload', {
+          method: 'POST',
+          body: form,
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          // Use the URL returned from backend
+          return { name: storedName, url: data.url };
+        } else {
+          console.error('Upload failed for', storedName, await res.text());
+          return null;
         }
-      })();
-
-      return { name: storedName, url };
+      } catch (err) {
+        console.error('Upload request failed:', err);
+        return null;
+      }
     });
-    if (task) {
-      const updated = { ...task, files: [...(task.files || []), ...files] };
-      UpdateTask({ ...updated, projectId: task.projectId })
-        .then(() => getEmployeeTasks(employeeId).then(fetched => setTasks(Array.isArray(fetched) ? fetched : [])))
-        .catch((e) => console.error('UpdateTask failed:', e));
-      setTasks((prev) => prev.map(t => t._id === currentTaskId ? updated : t));
-    }
-    setShowFileInput(false);
-    setCurrentTaskId(null);
+
+    // Wait for all uploads to complete
+    Promise.all(uploadPromises).then((uploadedFiles) => {
+      const validFiles = uploadedFiles.filter(f => f !== null);
+      
+      if (task && validFiles.length > 0) {
+        const updated = { ...task, files: [...(task.files || []), ...validFiles] };
+        UpdateTask({ ...updated, projectId: task.projectId })
+          .then(() => {
+            setTasks(prev => prev.map(t => t._id === currentTaskId ? updated : t));
+            try {
+              if (user && Array.isArray(user.tasks)) {
+                const newUser = { ...user, tasks: user.tasks.map(t => t._id === updated._id ? updated : t) };
+                loginUser(newUser, token);
+              }
+            } catch (err) {
+              console.warn('Failed to sync updated files into user context:', err);
+            }
+          })
+          .catch((e) => console.error('UpdateTask failed:', e));
+        setTasks((prev) => prev.map(t => t._id === currentTaskId ? updated : t));
+      }
+      
+      setShowFileInput(false);
+      setCurrentTaskId(null);
+    }).catch((err) => {
+      console.error('File upload processing failed:', err);
+      setShowFileInput(false);
+      setCurrentTaskId(null);
+    });
   };
 
-
+console.log(tasks);
   return (
     <div style={{ 
       minHeight: '100vh', 
@@ -366,7 +420,7 @@ export default function Employee_task() {
                 >
                   <option value="All">📁 All Projects</option>
                   {projectOptions.map((proj, idx) => (
-                    <option key={idx} value={proj}>{proj}</option>
+                    <option key={proj._id} value={proj._id}>{proj.Name}</option>
                   ))}
                 </Form.Select>
               </Col>
@@ -389,6 +443,7 @@ export default function Employee_task() {
                   <option value="To Do">📝 To Do</option>
                   <option value="In Progress">⏳ In Progress</option>
                   <option value="Completed">✅ Completed</option>
+                  <option value="Due">🕒 Overdue</option>
                 </Form.Select>
               </Col>
               <Col md={3} style={{ marginBottom: "16px" }}>
@@ -540,7 +595,9 @@ export default function Employee_task() {
                       </tr>
                     ) : (
                       filteredTasks.map((task, idx) => {
-                        const isOverdue = (task && task._doc && task._doc.isOverdue) || task.isOverdue;
+                        // Compute overdue by date (exclude today). Some tasks may have an isOverdue flag from server,
+                        // but compute client-side reliably from dueDate when available.
+                        const isOverdue = !!(task && task.dueDate && startOfDay(task.dueDate) < today && task.status !== "Completed");
                         return (
                           <tr key={task._id} style={{ 
                             backgroundColor: isOverdue ? '#fef2f2' : 'white',
@@ -574,21 +631,23 @@ export default function Employee_task() {
                               padding: '16px 12px',
                               borderBottom: '1px solid #f1f5f9'
                             }}>
-                              <Badge
-                                bg={
-                                  task.status === "Completed"
-                                    ? "success"
-                                    : task.status === "In Progress"
-                                      ? "warning"
-                                      : "primary"
-                                }
-                                style={{
-                                  fontSize: '11px',
-                                  fontWeight: '500'
-                                }}
-                              >
-                                {task.status}
-                              </Badge>
+                              {(
+                                <Badge
+                                  bg={
+                                    task.status === "Completed"
+                                      ? "success"
+                                      : task.status === "In Progress"
+                                        ? "warning"
+                                        : "primary"
+                                  }
+                                  style={{
+                                    fontSize: '11px',
+                                    fontWeight: '500'
+                                  }}
+                                >
+                                  {task.status}
+                                </Badge>
+                              )}
                             </td>
                             <td style={{ 
                               padding: '16px 12px',
@@ -618,7 +677,7 @@ export default function Employee_task() {
                               fontWeight: '500'
                             }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <span>{task.dueDate}</span>
+                                <span>{formatDate(task.dueDate)}</span>
                                 {isOverdue && (
                                   <Badge bg="danger" style={{ marginLeft: '8px', fontSize: '10px' }}>
                                     Overdue
@@ -645,7 +704,7 @@ export default function Employee_task() {
                                       }}
                                     >
                                       <a
-                                        href={file.url}
+                                        href={"http://localhost:3001" + file.url}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         style={{
@@ -666,16 +725,29 @@ export default function Employee_task() {
                                           variant="link"
                                           size="sm"
                                           title="Delete file"
-                                          onClick={async () => {
+                                              onClick={async () => {
                                             if (!window.confirm(`Delete file "${file.name}"?`)) return;
+                                            
+                                            const originalTask = task;
                                             try {
                                               const updated = { ...task, files: (task.files || []).filter((_, i) => i !== fidx) };
+                                              // optimistic UI update
                                               setTasks(prev => prev.map(t => t._id === task._id ? updated : t));
                                               await UpdateTask({ ...updated, projectId: task.projectId });
-                                              const fetched = await getEmployeeTasks(employeeId);
-                                              setTasks(Array.isArray(fetched) ? fetched : []);
+                                              // ensure user context and local tasks are in sync
+                                              try {
+                                                if (user && Array.isArray(user.tasks)) {
+                                                  const newUser = { ...user, tasks: user.tasks.map(t => t._id === updated._id ? updated : t) };
+                                                  loginUser(newUser, token);
+                                                }
+                                              } catch (err) {
+                                                console.warn('Failed to sync deleted file into user context:', err);
+                                                // fallback: keep optimistic update already applied
+                                              }
                                             } catch (e) {
                                               console.error('Delete file failed:', e);
+                                              // Revert optimistic update on error
+                                              setTasks(prev => prev.map(t => t._id === task._id ? originalTask : t));
                                             }
                                           }}
                                           style={{ 
@@ -706,26 +778,32 @@ export default function Employee_task() {
                                 <Button
                                   size="sm"
                                   onClick={() => handleMarkCompleted(task._id)}
-                                  title={task.status === "Completed" ? "Mark as In Progress" : "Mark as Completed"}
+                                  title={task.status === "Completed" ? "Restore to In Progress" : "Mark as Completed"}
                                   disabled={task.status == "To Do" || task.projectId.Status !== "Active"}
                                   style={{
-                                    background: task.status === "Completed" 
-                                      ? 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
-                                      : 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+                                    background: task.status === "Completed"
+                                      ? 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)' // subtle gray for restore
+                                      : 'linear-gradient(135deg, #16a34a 0%, #10b981 100%)', // clear green for complete
                                     border: 'none',
                                     borderRadius: '8px',
                                     padding: '8px 12px',
-                                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                                    transition: 'all 0.2s ease',
-                                    color: 'white'
+                                    boxShadow: task.status === "Completed" ? '0 2px 6px rgba(75,85,99,0.12)' : '0 2px 8px rgba(16,185,129,0.18)',
+                                    transition: 'all 0.15s ease',
+                                    color: 'white',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    minWidth: '38px'
                                   }}
                                   onMouseEnter={(e) => {
-                                    e.target.style.transform = 'translateY(-2px)';
-                                    e.target.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+                                    const el = e.currentTarget || e.target;
+                                    el.style.transform = 'translateY(-2px)';
+                                    el.style.boxShadow = task.status === "Completed" ? '0 4px 10px rgba(75,85,99,0.18)' : '0 6px 18px rgba(16,185,129,0.22)';
                                   }}
                                   onMouseLeave={(e) => {
-                                    e.target.style.transform = 'translateY(0)';
-                                    e.target.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+                                    const el = e.currentTarget || e.target;
+                                    el.style.transform = 'translateY(0)';
+                                    el.style.boxShadow = task.status === "Completed" ? '0 2px 6px rgba(75,85,99,0.12)' : '0 2px 8px rgba(16,185,129,0.18)';
                                   }}
                                 >
                                   {task.status === "Completed" ? <ArrowCounterclockwise /> : <Check2Circle />}

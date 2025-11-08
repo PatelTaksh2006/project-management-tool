@@ -3,6 +3,7 @@ import { Modal, Button, Form } from "react-bootstrap";
 
 export default function AddNewTask({ show, onClose, onTaskAdd, employeeList }) {
   // Form data state
+  console.log(employeeList);
   const [formData, setFormData] = useState({
     name: '',
     assignedTo: '',
@@ -104,7 +105,7 @@ export default function AddNewTask({ show, onClose, onTaskAdd, employeeList }) {
                 //   );
                 // }
                 const id = emp._id;
-                const label = emp.Name || emp.name || String(id);
+                const label = emp.Name+"-"+emp.EmpId;
                 return (
                   <option key={id} value={id}>{label}</option>
                 );

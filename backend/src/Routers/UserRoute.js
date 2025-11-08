@@ -32,7 +32,11 @@ router.post('/signup', async (req, res) => {
 router.post('/login', async (req, res) => {
     try {
         const { Email, Password } = req.body;
-        const user = await User.findOne({ Email }).populate('tasks').populate('project');
+        const user = await User.findOne({ Email }).populate({
+    path: 'tasks',
+    populate: { path: 'projectId' } // populate the project inside each task
+  }).populate('project');
+  console.log("After login:"+user);
         if (user && await bcrypt.compare(Password, user.Password)) {
             const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN });
 
@@ -51,6 +55,24 @@ router.post('/login', async (req, res) => {
     }
 });
 
+router.put('/update/:id', async (req, res) => {
+    try {
+        const userId = req.params.id;
+        const updateData = req.body;
 
+        const user = await User.findByIdAndUpdate(userId, updateData, { new: true });
+        if (!user) {
+            return res.status(404).send({ error: 'User not found' });
+        }
+
+        return res.send({ message: 'User updated', user });
+    } catch (err) {
+        console.error('Update error:', err);
+        if (err && err.name === 'ValidationError') {
+            return res.status(400).send({ error: 'ValidationError', details: err.message });
+        }
+        return res.status(500).send({ error: 'InternalServerError' });
+    }
+});
 
 export default router;

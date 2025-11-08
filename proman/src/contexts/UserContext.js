@@ -43,11 +43,72 @@ export const UserProvider = ({ children }) => {
     localStorage.removeItem('userData');
   };
 
+  // Refresh user data from backend
+  const refreshUser = async () => {
+    // Get current values from localStorage to avoid stale closure values
+    const currentToken = token || localStorage.getItem('token');
+    const currentUserStr = localStorage.getItem('userData');
+    
+    if (!currentUserStr || !currentToken) {
+      console.warn('Cannot refresh user: no user data or token in storage');
+      return false;
+    }
+
+    let currentUser;
+    try {
+      currentUser = JSON.parse(currentUserStr);
+    } catch (e) {
+      console.error('Failed to parse user data from localStorage');
+      return false;
+    }
+
+    if (!currentUser?._id) {
+      console.warn('Cannot refresh user: no user ID found');
+      return false;
+    }
+
+    try {
+      console.log(`Fetching fresh tasks for employee ID: ${currentUser._id}`);
+      
+      // Fetch fresh tasks for this employee
+      const tasksRes = await fetch(`http://localhost:3001/api/task/getByEmployee/${currentUser._id}`, {
+        headers: {
+          'Authorization': `Bearer ${currentToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (tasksRes.ok) {
+        const tasksData = await tasksRes.json();
+        console.log('Fresh tasks received:', tasksData);
+        
+        // Update user object with fresh tasks
+        const freshUserData = {
+          ...currentUser,
+          tasks: tasksData.tasks || tasksData || []
+        };
+        
+        setUser(freshUserData);
+        localStorage.setItem('userData', JSON.stringify(freshUserData));
+        console.log('User data refreshed successfully, tasks count:', freshUserData.tasks.length);
+        return true;
+      } else {
+        const errorText = await tasksRes.text();
+        console.error('Failed to refresh tasks:', tasksRes.status, errorText);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error refreshing user data:', error);
+      return false;
+    }
+  };
+
   const value = {
     user,
     token,
     loginUser,
     logoutUser,
+    refreshUser,
   };
 
   return (

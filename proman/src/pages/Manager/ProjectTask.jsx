@@ -22,6 +22,41 @@ export default function ProjectTask() {
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [showEditProject, setShowEditProject] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Format date for display (strip ISO time if present)
+  const formatDate = (d) => {
+    if (!d) return '';
+    try {
+      const dt = new Date(d);
+      if (!isNaN(dt)) return dt.toLocaleDateString();
+    } catch (e) {}
+    if (typeof d === 'string' && d.indexOf('T') !== -1) return d.split('T')[0];
+    return String(d);
+  };
+
+  // Function to refresh project data from backend
+  const refreshProjectData = async () => {
+    try {
+      console.log('ProjectTask: Refreshing project and tasks data...');
+      
+      // Fetch fresh project data
+      const allProjects = await getProjects(managerId);
+      const freshProject = Array.isArray(allProjects) ? allProjects.find((p) => p._id === id) || {} : {};
+      
+      // Fetch fresh tasks data
+      const freshTasks = await getTasks(id);
+      
+      console.log('ProjectTask: Fresh data received - Project:', freshProject.Name, 'Tasks:', freshTasks?.length);
+      
+      // Update state with fresh data (new object references)
+      setProject({ ...freshProject });
+      setTasks(Array.isArray(freshTasks) ? [...freshTasks] : []);
+    } catch (err) {
+      console.error('Failed to refresh project data:', err);
+    }
+  };
+
   // Sync with global project/task changes
   useEffect(() => {
     let mounted = true;
@@ -80,31 +115,39 @@ export default function ProjectTask() {
   }
 
   // Only update global store, let subscribe update local state
-  function handleAddTask(newTask) {
+  async function handleAddTask(newTask) {
     // Attach projectId and call Tasks.Add
     const payload = { ...newTask, projectId: id };
-    AddTask(payload).catch((e) => console.error('AddTask failed:', e));
+    await AddTask(payload).catch((e) => console.error('AddTask failed:', e));
+    // Refresh data after adding task
+    await refreshProjectData();
   }
 
-  function handleTaskUpdate(updatedTask) {
+  async function handleTaskUpdate(updatedTask) {
     if (!updatedTask) return;
     const payload = { ...updatedTask, projectId: id };
-    UpdateTask(payload).catch((e) => console.error('UpdateTask failed:', e));
+    await UpdateTask(payload).catch((e) => console.error('UpdateTask failed:', e));
+    // Refresh data after updating task
+    await refreshProjectData();
   }
 
   function handleDeleteTask(taskId) {
     if (!taskId) return;
-    DeleteTask(taskId, id).catch((e) => console.error('DeleteTask failed:', e));
+    DeleteTask(taskId, id)
+      .then(() => refreshProjectData())
+      .catch((e) => console.error('DeleteTask failed:', e));
   }
 
   function handleEditProject() {
     setShowEditProject(true);
   }
 
-  function handleProjectUpdate(updatedProject) {
+  async function handleProjectUpdate(updatedProject) {
     if (updatedProject) {
       updatedProject.managerId = managerId; // Ensure managerId is set
       update(updatedProject);
+      // Refresh data after updating project
+      await refreshProjectData();
     }
     setShowEditProject(false);
   }
@@ -252,7 +295,7 @@ export default function ProjectTask() {
                                 whiteSpace: "nowrap", 
                                 color: isOverdue ? '#b00020' : undefined 
                               }}>
-                                {task.dueDate} {isOverdue && <Badge bg="danger" style={{ marginLeft: 8 }}>Overdue</Badge>}
+                                {formatDate(task.dueDate)} {isOverdue && <Badge bg="danger" style={{ marginLeft: 8 }}>Overdue</Badge>}
                               </td>
                             );
                           })()}
@@ -261,7 +304,7 @@ export default function ProjectTask() {
                               task.files.map((file, fidx) => (
                                 <a
                                   key={fidx}
-                                  href={file.url}
+                                  href={"http://localhost:3001" + file.url}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   style={{
@@ -340,7 +383,10 @@ export default function ProjectTask() {
 
       <AddNewTask
         show={showCreateTask}
-        onClose={() => setShowCreateTask(false)}
+        onClose={async () => {
+          setShowCreateTask(false);
+          await refreshProjectData();
+        }}
         onTaskAdd={handleAddTask}
         employeeList={project.team || []}
       />
@@ -348,7 +394,10 @@ export default function ProjectTask() {
       <EditTask
         task={selectedTask}
         show={showUpdateTask}
-        onClose={() => setUpdateTask(false)}
+        onClose={async () => {
+          setUpdateTask(false);
+          await refreshProjectData();
+        }}
         onTaskUpdate={handleTaskUpdate}
         employeeList={Array.isArray(project.team) ? project.team : []}
       />
@@ -356,7 +405,10 @@ export default function ProjectTask() {
       <EditProject
         project={project}
         show={showEditProject}
-        onClose={() => setShowEditProject(false)}
+        onClose={async () => {
+          setShowEditProject(false);
+          await refreshProjectData();
+        }}
         onProjectUpdate={handleProjectUpdate}
         SelectedEmployeeList={Array.isArray(project.team) ? project.team : []}
       />

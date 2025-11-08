@@ -127,7 +127,7 @@ export default function EditTask({ task, show, onClose, onTaskUpdate, employeeLi
                 employeeList.map((emp, idx) => {
                   if (!emp) return null;
                   const id = String(emp._id || emp.id || idx);
-                  const label = emp.Name || emp.name || id;
+                  const label = (emp.Name || emp.name || id) + "-" + (emp.EmpId || "");
                   return (
                     <option key={id} value={id}>
                       {label}
@@ -175,7 +175,7 @@ export default function EditTask({ task, show, onClose, onTaskUpdate, employeeLi
                     className="d-flex justify-content-between align-items-center"
                   >
                     <a
-                      href={file.url}
+                      href={"http://localhost:3001" + file.url}
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{ textDecoration: "none" }}

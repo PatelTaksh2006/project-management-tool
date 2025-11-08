@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from "react";
 import Navbar from "../../components/Navbar";
 import Sidebar from "../../components/Sidebar";
-import { Row, Col, Card, Badge, Container, ProgressBar } from "react-bootstrap";
+import { Row, Col, Card, Badge, Container, ProgressBar, Button } from "react-bootstrap";
 import { useUser } from "../../contexts/UserContext";
 import { getProjects, subscribe } from "../../Data/Projects";
+import UpdateProfile from "../../components/UpdateProfile";
 
 export default function Dashboard() {
   const { user } = useUser();
   let id = user?._id;
   const [projects, setProjects] = useState([]);
+  const [showUpdateProfile, setShowUpdateProfile] = useState(false);
 
   // Fetch projects and subscribe to changes
   useEffect(() => {
@@ -52,12 +54,20 @@ export default function Dashboard() {
     }
     return acc;
   }, 0);
+  // Helpers to compare dates by day (exclude today from overdue)
+  const MS_PER_DAY = 1000 * 60 * 60 * 24;
+  const startOfDay = (d) => {
+    const dt = new Date(d);
+    dt.setHours(0, 0, 0, 0);
+    return dt;
+  };
+  const today = startOfDay(new Date());
   // Get missed deadline tasks
   let missedDeadlineTasks = [];
   projects.forEach(project => {
     if (Array.isArray(project.tasks)) {
       project.tasks.forEach(task => {
-        if (task.dueDate && new Date(task.dueDate) < new Date() && task.status !== "Completed") {
+        if (task.dueDate && startOfDay(task.dueDate) < today && task.status !== "Completed") {
           missedDeadlineTasks.push({
             ...task,
             projectName: project.Name,
@@ -127,29 +137,52 @@ export default function Dashboard() {
                 boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                 border: '1px solid #e5e7eb'
               }}>
-                <h4 style={{ 
-                  margin: '0 0 20px 0', 
-                  color: '#374151', 
-                  fontSize: '18px', 
-                  fontWeight: '600',
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  marginBottom: '20px',
                   paddingBottom: '12px',
                   borderBottom: '1px solid #e5e7eb'
                 }}>
-                  Profile Information
-                </h4>
+                  <h4 style={{ 
+                    margin: 0, 
+                    color: '#374151', 
+                    fontSize: '18px', 
+                    fontWeight: '600'
+                  }}>
+                    Profile Information
+                  </h4>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => setShowUpdateProfile(true)}
+                    style={{
+                      borderRadius: '8px',
+                      padding: '6px 16px',
+                      fontWeight: '500'
+                    }}
+                  >
+                    ✏️ Update Profile
+                  </Button>
+                </div>
                 <Row>
                   <Col md={6}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <strong style={{ color: '#374151', minWidth: '100px' }}>Name:</strong>
+                        <strong style={{ color: '#374151', minWidth: '120px' }}>Employee ID:</strong>
+                        <span style={{ color: '#6b7280' }}>{user?.EmpId || 'N/A'}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <strong style={{ color: '#374151', minWidth: '120px' }}>Name:</strong>
                         <span style={{ color: '#6b7280' }}>{user?.Name || user?.name || 'N/A'}</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <strong style={{ color: '#374151', minWidth: '100px' }}>Email:</strong>
+                        <strong style={{ color: '#374151', minWidth: '120px' }}>Email:</strong>
                         <span style={{ color: '#6b7280' }}>{user?.Email || user?.email || 'N/A'}</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <strong style={{ color: '#374151', minWidth: '100px' }}>Role:</strong>
+                        <strong style={{ color: '#374151', minWidth: '120px' }}>Role:</strong>
                         <span style={{ 
                           background: '#f3f4f6', 
                           color: '#374151', 
@@ -373,23 +406,23 @@ export default function Dashboard() {
                       display: 'flex', 
                       alignItems: 'center', 
                       justifyContent: 'space-between',
-                      background: projects.filter(p => p.EndDate && new Date(p.EndDate) < new Date() && p.Status !== "Completed").length > 0 
+                      background: projects.filter(p => p.EndDate && startOfDay(p.EndDate) < today && p.Status !== "Completed").length > 0 
                         ? 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)' 
                         : 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
                       padding: '14px 18px',
                       borderRadius: '10px',
-                      border: projects.filter(p => p.EndDate && new Date(p.EndDate) < new Date() && p.Status !== "Completed").length > 0 
+                      border: projects.filter(p => p.EndDate && startOfDay(p.EndDate) < today && p.Status !== "Completed").length > 0 
                         ? '1px solid #fecaca' 
                         : '1px solid #bbf7d0',
                       marginBottom: '16px',
-                      boxShadow: projects.filter(p => p.EndDate && new Date(p.EndDate) < new Date() && p.Status !== "Completed").length > 0 
+                      boxShadow: projects.filter(p => p.EndDate && startOfDay(p.EndDate) < today && p.Status !== "Completed").length > 0 
                         ? '0 2px 8px rgba(239, 68, 68, 0.1)' 
                         : '0 2px 8px rgba(34, 197, 94, 0.1)',
                       transition: 'all 0.2s ease'
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <div style={{ 
-                          background: projects.filter(p => p.EndDate && new Date(p.EndDate) < new Date() && p.Status !== "Completed").length > 0 ? '#ef4444' : '#22c55e', 
+                          background: projects.filter(p => p.EndDate && startOfDay(p.EndDate) < today && p.Status !== "Completed").length > 0 ? '#ef4444' : '#22c55e', 
                           color: 'white', 
                           width: '36px', 
                           height: '36px', 
@@ -400,7 +433,7 @@ export default function Dashboard() {
                           fontSize: '18px',
                           boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                         }}>
-                          {projects.filter(p => p.EndDate && new Date(p.EndDate) < new Date() && p.Status !== "Completed").length > 0 ? '⚠️' : '✅'}
+                          {projects.filter(p => p.EndDate && startOfDay(p.EndDate) < today && p.Status !== "Completed").length > 0 ? '⚠️' : '✅'}
                         </div>
                         <div>
                           <div style={{ 
@@ -413,17 +446,17 @@ export default function Dashboard() {
                           </div>
                           <div style={{ 
                             fontSize: '12px', 
-                            color: projects.filter(p => p.EndDate && new Date(p.EndDate) < new Date() && p.Status !== "Completed").length > 0 ? '#7f1d1d' : '#065f46',
+                            color: projects.filter(p => p.EndDate && startOfDay(p.EndDate) < today && p.Status !== "Completed").length > 0 ? '#7f1d1d' : '#065f46',
                             fontWeight: '500'
                           }}>
-                            {projects.filter(p => p.EndDate && new Date(p.EndDate) < new Date() && p.Status !== "Completed").length > 0 
+                            {projects.filter(p => p.EndDate && startOfDay(p.EndDate) < today && p.Status !== "Completed").length > 0 
                               ? 'Action Required' 
                               : 'All on track'}
                           </div>
                         </div>
                       </div>
                       <div style={{ 
-                        background: projects.filter(p => p.EndDate && new Date(p.EndDate) < new Date() && p.Status !== "Completed").length > 0 ? '#ef4444' : '#22c55e', 
+                        background: projects.filter(p => p.EndDate && startOfDay(p.EndDate) < today && p.Status !== "Completed").length > 0 ? '#ef4444' : '#22c55e', 
                         color: 'white', 
                         padding: '8px 16px', 
                         borderRadius: '20px', 
@@ -433,7 +466,7 @@ export default function Dashboard() {
                         textAlign: 'center',
                         boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
                       }}>
-                        {projects.filter(p => p.EndDate && new Date(p.EndDate) < new Date() && p.Status !== "Completed").length}
+                        {projects.filter(p => p.EndDate && startOfDay(p.EndDate) < today && p.Status !== "Completed").length}
                       </div>
                     </div>
                   </Col>
@@ -627,19 +660,17 @@ export default function Dashboard() {
                                 </span>
                                 <span style={{ 
                                   background: (() => {
-                                    const deadline = new Date(element.EndDate);
-                                    const today = new Date();
-                                    const daysDiff = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24));
-                                    
+                                    const deadline = startOfDay(element.EndDate);
+                                    const daysDiff = Math.floor((deadline - today) / MS_PER_DAY);
+
                                     if (daysDiff < 0) return '#fee2e2'; // Overdue - light red
                                     if (daysDiff <= 3) return '#fef3c7'; // Due soon - light yellow
                                     return '#d1fae5'; // Safe - light green
                                   })(),
                                   color: (() => {
-                                    const deadline = new Date(element.EndDate);
-                                    const today = new Date();
-                                    const daysDiff = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24));
-                                    
+                                    const deadline = startOfDay(element.EndDate);
+                                    const daysDiff = Math.floor((deadline - today) / MS_PER_DAY);
+
                                     if (daysDiff < 0) return '#dc2626'; // Overdue - red
                                     if (daysDiff <= 3) return '#d97706'; // Due soon - orange
                                     return '#059669'; // Safe - green
@@ -651,10 +682,9 @@ export default function Dashboard() {
                                 }}>
                                   {new Date(element.EndDate).toLocaleDateString()}
                                   {(() => {
-                                    const deadline = new Date(element.EndDate);
-                                    const today = new Date();
-                                    const daysDiff = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24));
-                                    
+                                    const deadline = startOfDay(element.EndDate);
+                                    const daysDiff = Math.floor((deadline - today) / MS_PER_DAY);
+
                                     if (daysDiff < 0) return ` (Overdue)`;
                                     if (daysDiff === 0) return ` (Today)`;
                                     if (daysDiff === 1) return ` (Tomorrow)`;
@@ -856,7 +886,10 @@ export default function Dashboard() {
                                 borderRadius: '4px',
                                 fontSize: '10px'
                               }}>
-                                {Math.abs(Math.ceil((new Date(task.dueDate) - new Date()) / (1000 * 60 * 60 * 24)))} days overdue
+                                {(() => {
+                                  const overdueDays = Math.floor((today - startOfDay(task.dueDate)) / MS_PER_DAY);
+                                  return Math.max(0, overdueDays);
+                                })()} days overdue
                               </span>
                             </div>
                           )}
@@ -879,6 +912,13 @@ export default function Dashboard() {
             </Row>
         </Col>
       </Row>
+
+      {/* Update Profile Modal */}
+      <UpdateProfile
+        show={showUpdateProfile}
+        onClose={() => setShowUpdateProfile(false)}
+        currentUser={user}
+      />
     </div>
   );
 }

@@ -26,7 +26,6 @@ const ProjectSchema=new mongoose.Schema(
     description: {
         type: String
     },
-    stakeholders: [String],
     budget: {
         type: Number
     },

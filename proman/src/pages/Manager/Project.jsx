@@ -13,7 +13,7 @@ import { useUser } from "../../contexts/UserContext";
 export default function Project() {
   const {user} = useUser();
   if(user)
-  console.log(user);
+  console.log("current user:", user);
 else
   console.log("no user");
   let id = user?._id; // Use user ID from context, fallback to 101
