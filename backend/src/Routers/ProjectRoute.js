@@ -40,7 +40,7 @@ router.get('/getAll',async (req,res)=>{
 
 router.put('/update', async (req, res) => {
     const currentProject = await project.findById(req.body._id);
-
+console.log("projecct to update:",req.body);
     // Convert both arrays to string ids for safe comparison
     const oldTeam = currentProject.team.map(id => id.toString());
     const newTeam = req.body.team ? req.body.team.map(id => id.toString()) : [];
@@ -87,6 +87,9 @@ router.put('/update', async (req, res) => {
                     );
                     await user.save();
                 }
+                req.body.tasks = req.body.tasks.filter(
+                    tid => tid._id.toString() !== task._id.toString()
+                );
                 await task.deleteOne();
             }
         }

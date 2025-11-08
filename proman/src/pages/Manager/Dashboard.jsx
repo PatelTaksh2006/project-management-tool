@@ -579,7 +579,8 @@ export default function Dashboard() {
                           cursor: 'pointer'
                         }}
                         onClick={() => {
- navigate(`/manager/projects/${element._id}`)                        }}
+                          navigate(`/manager/projects/${element._id}`, { state: { fromApp: true } });
+                        }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
                           e.currentTarget.style.transform = 'translateY(-1px)';

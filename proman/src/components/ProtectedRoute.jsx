@@ -37,15 +37,14 @@ const ProtectedRoute = ({ children, role, requireProjectAccess }) => {
     return <Navigate to="/manager" replace />;
   }
 
-  // Project access validation for manager routes with project ID
-  if (requireProjectAccess && id && role === "manager") {
-    const hasAccess = user.project?.some(project => 
-      project._id === id || project.id === id
-    );
+  // Block direct URL access for project routes
+  if (requireProjectAccess && id) {
+    // Check if user navigated here programmatically (via button click)
+    const navigatedProgrammatically = location.state?.fromApp === true;
     
-    if (!hasAccess) {
-      // Redirect to projects page with error message
-      return <Navigate to="/manager/project" replace  />;
+    if (!navigatedProgrammatically) {
+      // User typed URL directly or refreshed - block access
+      return <Navigate to="/manager/project" replace state={{ error: "Direct URL access is not allowed. Please use the View button." }} />;
     }
   }
 

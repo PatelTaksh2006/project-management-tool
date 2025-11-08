@@ -181,6 +181,22 @@ router.put('/update', async (req, res) => {
 router.delete('/delete', async (req, res) => {
     const deleteId=req.body.id;
     const deleteTask=await Task.findByIdAndDelete(deleteId);
+    const projectId=deleteTask.projectId;
+    if(projectId && mongoose.Types.ObjectId.isValid(projectId.toString())) {
+        const project=await Project.findById(projectId);
+        if (project) {
+            project.tasks=project.tasks.filter(taskId=>taskId.toString()!==deleteId);
+            await project.save();
+        }
+    }
+    const userId=deleteTask.assignedTo;
+    if (userId && mongoose.Types.ObjectId.isValid(userId.toString())) {
+        const user = await User.findById(userId.toString());
+        if (user) {
+            user.tasks = user.tasks.filter(taskId => taskId.toString() !== deleteId);
+            await user.save();
+        }
+    }
     let filesTodelete=deleteTask.files;
     for (const filepath of filesTodelete) {
       const fullPath = `C:\\Users\\taksh\\Documents\\projects\\SEM5\\AT\\project-management-tool\\upload_Documents\\${filepath.name}`;

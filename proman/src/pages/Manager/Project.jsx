@@ -98,7 +98,7 @@ else
   const navigate = useNavigate();
 
   const onViewProject = (id) => {
-    navigate(`/manager/projects/${id}`);
+    navigate(`/manager/projects/${id}`, { state: { fromApp: true } });
   };
   const onProjectDelete = (projectId) => {
     del(projectId, id);
