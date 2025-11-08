@@ -5,8 +5,11 @@ import { Row, Col, Card, Badge, Container, ProgressBar, Button } from "react-boo
 import { useUser } from "../../contexts/UserContext";
 import { getProjects, subscribe } from "../../Data/Projects";
 import UpdateProfile from "../../components/UpdateProfile";
+import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
+  const navigate = useNavigate();
+
   const { user } = useUser();
   let id = user?._id;
   const [projects, setProjects] = useState([]);
@@ -576,8 +579,7 @@ export default function Dashboard() {
                           cursor: 'pointer'
                         }}
                         onClick={() => {
-                          window.location.href = `/manager/projects/${element._id}`;
-                        }}
+ navigate(`/manager/projects/${element._id}`)                        }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
                           e.currentTarget.style.transform = 'translateY(-1px)';

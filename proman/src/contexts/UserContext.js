@@ -7,6 +7,7 @@ const UserContext = createContext();
 export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
+  const [loading, setLoading] = useState(true); // Add loading state
 
   // Load user data from localStorage on app start
   useEffect(() => {
@@ -25,6 +26,43 @@ export const UserProvider = ({ children }) => {
         localStorage.removeItem('userData');
       }
     }
+    
+    // Mark loading as complete
+    setLoading(false);
+
+    // Listen for storage changes in other tabs
+    const handleStorageChange = (e) => {
+      // Only handle changes to our specific keys
+      if (e.key === 'token' || e.key === 'userData') {
+        console.log('Storage changed in another tab:', e.key);
+        
+        // If token is removed, user logged out in another tab
+        if (e.key === 'token' && !e.newValue) {
+          console.log('User logged out in another tab');
+          setUser(null);
+          setToken(null);
+          // Force redirect to login
+          window.location.href = '/';
+        }
+        
+        // If userData changed, update it
+        if (e.key === 'userData' && e.newValue) {
+          try {
+            setUser(JSON.parse(e.newValue));
+          } catch (error) {
+            console.error('Error parsing updated user data:', error);
+          }
+        }
+      }
+    };
+
+    // Add event listener for storage changes
+    window.addEventListener('storage', handleStorageChange);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   // Login function to store user and token
@@ -106,8 +144,10 @@ export const UserProvider = ({ children }) => {
   const value = {
     user,
     token,
+    loading,
     loginUser,
     logoutUser,
+    setUser,
     refreshUser,
   };
 

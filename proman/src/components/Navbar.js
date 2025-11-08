@@ -1,7 +1,17 @@
 import React from "react";
 import { Navbar, Nav, Container, Button, Badge } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
+import { useUser } from "../contexts/UserContext";
 
 export default function TopNavbar({ name }) {
+  const navigate = useNavigate();
+  const { logoutUser } = useUser();
+
+  const handleLogout = () => {
+    logoutUser(); // Clear user data and token from context and localStorage
+    navigate('/'); // Navigate to login page
+  };
+
   return (
     <div style={{
       background: '#4f46e5',
@@ -41,7 +51,7 @@ export default function TopNavbar({ name }) {
             </span>
 
             <Button 
-              href="/" 
+              onClick={handleLogout}
               style={{
                 background: 'rgba(255,255,255,0.1)',
                 border: '1px solid rgba(255,255,255,0.3)',
@@ -51,7 +61,8 @@ export default function TopNavbar({ name }) {
                 fontSize: '14px',
                 fontWeight: '500',
                 textDecoration: 'none',
-                transition: 'all 0.2s ease'
+                transition: 'all 0.2s ease',
+                cursor: 'pointer'
               }}
               onMouseEnter={(e) => {
                 e.target.style.background = 'rgba(255,255,255,0.2)';
