@@ -4,6 +4,11 @@ import Project from '../models/ProjectSchema.js'
 import User from '../models/UserSchema.js'
 import mongoose from 'mongoose'
 import fs from 'fs/promises'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const router = express.Router();
 
 // Add a new task and attach it to the project (and user if assigned)
@@ -132,8 +137,9 @@ router.put('/update', async (req, res) => {
         let updatedFiles=updatedTask.files;
         let filesTodelete=oldFiles.filter(file => !updatedFiles.some(newFile => file.url === newFile.url));
         let flagForEnonet=false;
+        const uploadsSiblingDir = path.join(__dirname, '..', '..', '..', 'upload_Documents');
         for (const filepath of filesTodelete) {
-      const fullPath = `C:\\Users\\taksh\\Documents\\projects\\SEM5\\AT\\project-management-tool\\upload_Documents\\${filepath.name}`;
+      const fullPath = path.join(uploadsSiblingDir, filepath.name);
       try {
         await fs.unlink(fullPath);
         console.log('Deleted:', fullPath);
@@ -198,8 +204,10 @@ router.delete('/delete', async (req, res) => {
         }
     }
     let filesTodelete=deleteTask.files;
+    const uploadsSiblingDir = path.join(__dirname,'..', '..', '..', 'upload_Documents');
     for (const filepath of filesTodelete) {
-      const fullPath = `C:\\Users\\taksh\\Documents\\projects\\SEM5\\AT\\project-management-tool\\upload_Documents\\${filepath.name}`;
+
+        const fullPath = path.join(uploadsSiblingDir, filepath.name);
       try {
         await fs.unlink(fullPath);
         console.log('Deleted:', fullPath);
