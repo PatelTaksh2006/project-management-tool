@@ -14,9 +14,9 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app=express()
-mongoose.connect("mongodb://127.0.0.1:27017/ProDb")
-.then(() => {})
-.catch(err => console.error("Not connected", err));
+mongoose.connect(process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/ProDb")
+.then(() => console.log("MongoDB connected successfully"))
+.catch(err => console.error("MongoDB connection error:", err));
 
 app.use(cors({
     origin: 'http://localhost:3000', // allow only this origin
@@ -63,6 +63,6 @@ app.post('/api/upload', (req, res) => {
     res.json({ url: `/api/upload/${encodeURIComponent(safeName)}` });
   });
 });
-app.listen(3001,()=>{
-  console.info("server started at 3001");
+app.listen(process.env.PORT || 3001,()=>{
+  console.info(`server started at ${process.env.PORT || 3001}`);
 });
